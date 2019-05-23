@@ -73,7 +73,7 @@
            $.ajax({
                 type: "post",
                 data: { "_id": "Sheet1"},
-                url: "GetExamPaper.ashx",
+                url: "/common/GetExamPaper.ashx",
                 async: false,
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
                     alert("requst failure");
@@ -205,12 +205,12 @@
             $.ajax({
                 type: "post",
                 data: { "Answer": JSON.stringify(answerSheet) },
-                url: "PutExamSheet.ashx",
+                url: "/common/PutExamSheet.ashx",
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
                     window.location.replace('submitExamPaper.cshtml?success=False');
                 },
                 success: function (data) {
-                    //window.location.replace('submitExamPaper.cshtml?success=' + data);
+                    window.location.replace('submitExamPaper.cshtml?success=' + data);
                 }
             });
         }

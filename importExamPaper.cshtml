@@ -34,7 +34,7 @@
             //reader.readAsDataURL(file);
             formData.append("file", file);
             $.ajax({
-                url: "putexam.ashx",
+                url: "/common/putexam.ashx",
                 type: "post",
                 cache: false,
                 data: formData,
@@ -55,7 +55,7 @@
                 //dataType: 'json',
                 dataType: "json",
                 contentType : 'application/json',
-                url: 'getPaper.ashx',
+                url: '/common/getPaper.ashx',
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
                     alert('Failed request');
                 },
