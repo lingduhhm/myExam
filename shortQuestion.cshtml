@@ -1,0 +1,154 @@
+﻿<div class="shortList" id="shortQuestion">
+    <div class="shortLabBtns" style="text-align: left; float:left; max-width: 900px;"></div>
+    <!--<div class="pauseBtn" style="width: 200px; float: right; margin: 20px 0px; text-align: right;">
+        <button class="btn btn-primary" data-toggle="modal" data-target="#pauseModal">Pause</button>
+    </div>-->
+    <div class="clearboth"></div>
+    <div class="shortItem" style="background-color: #f5f5f5; padding: 10px;">
+    </div>
+</div>
+<script>
+    var shortList = null;
+    var currentShortQuestionNo = 0;
+    var shortQuestionAnswer = [];
+    var shortQuestionTimer = [];
+    var shortMixOrder = [];
+
+    $(document).ready(function () {
+        shortList = getValueFromParam('shortQuestion') || [];
+        if (shortList.length !== 0) {
+            refreshShortList();
+            setFirstShortSelected();
+            setFirstTabSelected();
+            var E = window.wangEditor
+            var oEditorEle = $('.editor');
+            for (var i = 0; i < oEditorEle.length; i++) {
+                var editor = new E(oEditorEle[i]);
+                editor.customConfig.onchange = editorChange;
+                editor.create();
+            }
+        }       
+    })
+    function refreshShortList() {
+        var shortListLabButtons = '';
+        var shortListContent = '';
+        $('.nav .nav-item').eq(4).removeClass('tabDisabled');
+        if (mixOrderFlag) {
+            shortMixOrder = shuffleIndex(shortList.length);
+            shortList = formatByNewIndex(shortMixOrder, shortList);
+        }
+        for (var i = 0; i < shortList.length; i++) {
+
+            //init the timer of answer, include answer and time
+            shortQuestionAnswer[i] = '';
+            shortQuestionTimer[i] = [];
+            //init the quesiton label button
+            shortListLabButtons += '<button class="btn questionLabNo" type="button">' + (i + 1) + '</button>';
+            //init the question content
+            shortListContent += '<div class="slide-container"><div class="stem">' + (i+1) + '. ' + shortList[i] + '</div>';
+            shortListContent += '<div class="editor"></div>'
+            
+            if (i == 0) {
+                shortListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled>上一题</button>';
+            } else {
+                shortListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous">上一题</button>';
+            }
+            shortListContent += '<span class="labNo">' + (i + 1) + '</span><span>/</span><span>' + shortList.length + '</span>';
+            shortListContent += '<button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button></div></div>';
+        }
+        $(".shortLabBtns").html(shortListLabButtons);
+        $('.shortItem').html(shortListContent);
+        
+        //click next button
+        $('.shortItem').find('.nav_next').click(function () {
+            checkShortAnswer();
+            if (currentShortQuestionNo < shortList.length - 1) {
+                currentShortQuestionNo ++;
+            } else {
+                $('.tab-content').hide();
+                $('#navToNextTab').modal('show');
+                return false;
+            }
+            $(this).parents('.slide-container').fadeOut(500,
+                function () {
+                    $(this).next().fadeIn(500, getTimer);
+                }
+            );
+            setQuestionLabFocus('.shortLabBtns', currentShortQuestionNo);
+        });
+        //click prev button
+        $('.shortItem').find('.nav_previous').click(function () {
+            checkShortAnswer();
+            currentShortQuestionNo --;
+            $(this).parents('.slide-container').fadeOut(500,
+                function () {
+                    $(this).prev().fadeIn(500, getTimer);
+                }
+            );
+            setQuestionLabFocus('.shortLabBtns', currentShortQuestionNo);
+        });
+        //click question lab button
+        $('.shortLabBtns').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
+            if (!notCheckAnswer) {
+                checkShortAnswer();
+            }
+            var index = $(this).index();
+            $('.shortItem .slide-container').hide();
+            $('.shortItem .slide-container').eq(index).fadeIn(500, getTimer);
+            currentShortQuestionNo = index;
+            setQuestionLabFocus('.shortLabBtns', index);
+        });
+    }
+    function editorChange() {
+        var contentEle = $('.editor:eq(' + currentShortQuestionNo + ')>div:eq(1)');
+        var content = contentEle.text().trim();
+        var thisLabNo = $('.shortLabBtns .questionLabNo').eq(currentShortQuestionNo);
+        if (content.length != 0) {
+            thisLabNo.addClass('selected');
+        } else {
+            thisLabNo.removeClass('selected');
+        }
+    }
+    function setFirstShortSelected() {
+        $('.shortItem .slide-container').hide();
+        $('.shortItem .slide-container').eq(0).fadeIn(500);
+        setQuestionLabFocus('.shortLabBtns', 0);
+    }
+    function checkShortAnswer() {
+        clearInterval(timer);
+        var ifAnswer = $('.shortLabBtns .questionLabNo').eq(currentShortQuestionNo).hasClass('selected');
+        if (ifAnswer) {
+            var contentEle = $('.editor:eq(' + currentShortQuestionNo + ')>div:eq(1)');
+            var content = contentEle.html();
+            if (shortQuestionAnswer[currentShortQuestionNo] != content) {
+                shortQuestionAnswer[currentShortQuestionNo] = content;
+                shortQuestionTimer[currentShortQuestionNo].push(time);
+            } else {
+                if (time > 2) {
+                    shortQuestionTimer[currentShortQuestionNo].push(time);
+                }
+            }
+        } else {
+            shortQuestionAnswer[currentShortQuestionNo] = '';
+            if (time > 2) {
+                shortQuestionTimer[currentShortQuestionNo].push(time);
+            }
+        }      
+        time = 0;
+    };
+    function getShortAnswer() {
+        var shortAnswerSheet = [];
+        if (shortList.length > 0) {
+            for (var i = 0; i < shortList.length; i++) {
+                shortAnswerSheet.push({
+                    answer: shortQuestionAnswer[i],
+                    miniseconds: shortQuestionTimer[i]
+                });
+            }
+        }
+        if (mixOrderFlag) {
+            shortAnswerSheet = restoreByNewIndex(shortMixOrder, shortAnswerSheet);
+        }
+        answerSheet['shorts'] = shortAnswerSheet;
+    }
+</script>

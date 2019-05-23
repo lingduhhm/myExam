@@ -1,0 +1,174 @@
+﻿<div class="singleList" id="singleList">
+    <div class="singleLabBtns" style="text-align: left; float:left; max-width: 900px;"></div>
+    <div class="clearboth"></div>
+    <div class="singleQuestionItem" style="background-color: #f5f5f5; padding: 10px;">
+    </div>
+</div>
+<script>
+    var singleList = null;
+    var currentSingleQuestionNo = 0;
+    var singleQuestionAnswer = [];
+    var singleQuestionTimer = [];
+    var singleMixOrder = [];
+
+    $(document).ready(function () {
+        singleList = getValueFromParam('single') || [];
+        if (singleList.length !== 0) {
+            refreshSingleList();
+            setFirstSelected();
+        }
+    });
+    function refreshSingleList() {
+        var singleListLabButtons = '';
+        var singleListContent = '';
+        var candidatesIndex = '';
+        $('.nav .nav-item').eq(0).removeClass('tabDisabled');
+        if (mixOrderFlag) {
+            singleMixOrder = shuffleIndex(singleList.length);
+            console.log(singleMixOrder);
+            singleList = formatByNewIndex(singleMixOrder, singleList);
+        }
+        if (mixSelectionFlag) {
+            singleMixSelection = shuffleIndex(4);
+        }
+        for (var i = 0; i < singleList.length; i++) {
+            //init the timer of answer, include answer and time
+            singleQuestionAnswer[i] = 0;
+            singleQuestionTimer[i] = [];
+            //init the quesiton label button
+            singleListLabButtons += '<button class="btn questionLabNo" type="button">' + (i + 1) + '</button>';
+            //init the question content
+            singleListContent += '<div class="slide-container"><div class="stem">' + (i + 1) + '. ' + singleList[i].stem + '</div><ul class="candidates">';
+            for (var j = 0; j < singleList[i].candidates.length; j++) {
+                var candidates = singleList[i].candidates;
+                if (mixSelectionFlag) {
+                    candidates = formatByNewIndex(singleMixSelection, singleList[i].candidates);
+                }
+                candidatesIndex = formatCharCode(j);
+                singleListContent += '<li tabindex="0">' + candidatesIndex + '. ' + candidates[j] + '</li>';
+            }
+            singleListContent += '</ul>';
+            if (i == 0) {
+                singleListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled>上一题</button>';
+            } else {
+                singleListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous">上一题</button>';
+            }
+            singleListContent += '<span class="labNo">' + (i + 1) + '</span><span>/</span><span>' + singleList.length + '</span>';
+            singleListContent += '<button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button></div></div>';
+        }
+        $(".singleLabBtns").html(singleListLabButtons);
+        $('.singleQuestionItem').html(singleListContent);
+
+        //select at least one answer
+        $('.singleQuestionItem').find('li').click(function () {
+            candidatesToggle($(this));
+        });
+        $('.singleQuestionItem').find('li').keydown(function (event) {
+            var event = event || window.event;
+            var keyCode = event.keyCode;
+            if (keyCode == 13) {
+                candidatesToggle($(this));
+            }
+        });
+        //click next button
+        $('.singleQuestionItem').find('.nav_next').click(function () {
+            checkSingleAnswer();
+            if (currentSingleQuestionNo < singleList.length - 1) {
+                currentSingleQuestionNo++;
+            } else {
+                $('.tab-content').hide();
+                $('#navToNextTab').modal('show');
+                return false;
+            }
+            $(this).parents('.slide-container').fadeOut(500,
+                function () {
+                    $(this).next().fadeIn(500, getTimer);
+                }
+            );
+            setQuestionLabFocus('.singleLabBtns', currentSingleQuestionNo);
+        });
+        //click prev button
+        $('.singleQuestionItem').find('.nav_previous').click(function () {
+            checkSingleAnswer();
+            currentSingleQuestionNo--;
+            $(this).parents('.slide-container').fadeOut(500,
+                function () {
+                    $(this).prev().fadeIn(500, getTimer);
+                }
+            );
+            setQuestionLabFocus('.singleLabBtns', currentSingleQuestionNo);
+        });
+        //click question lab button
+        $('.singleLabBtns').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
+            if (!notCheckAnswer) {
+                checkSingleAnswer();
+            }
+            var index = $(this).index();
+            $('.singleQuestionItem .slide-container').hide();
+            $('.singleQuestionItem .slide-container').eq(index).fadeIn(500, getTimer);
+            currentSingleQuestionNo = index;
+            setQuestionLabFocus('.singleLabBtns', index);
+        });
+    }
+    function setFirstSelected() {
+        $('.singleQuestionItem .slide-container').hide();
+        $('.singleQuestionItem .slide-container').eq(0).fadeIn(500);
+        setQuestionLabFocus('.singleLabBtns', 0);
+    }
+    function candidatesToggle(item) {
+        var thisLabNo = $('.singleLabBtns .questionLabNo').eq(currentSingleQuestionNo);
+        if (item.hasClass('selected')) {
+            item.removeClass('selected');
+            thisLabNo.removeClass('selected');
+        } else {
+            item.parents('.candidates').children('li').removeClass('selected');
+            item.addClass('selected');
+            thisLabNo.addClass('selected');
+        }
+    }    
+    function checkSingleAnswer() {
+        clearInterval(timer);
+        var ifAnswer = $('.singleLabBtns .questionLabNo').eq(currentSingleQuestionNo).hasClass('selected');
+        if (ifAnswer) {
+            var questionItem = $('.singleQuestionItem .candidates').eq(currentSingleQuestionNo);
+            var answer = questionItem.find('li.selected');
+            if (singleQuestionAnswer[currentSingleQuestionNo] != answer.index() + 1) {
+                singleQuestionAnswer[currentSingleQuestionNo] = answer.index() + 1;
+                singleQuestionTimer[currentSingleQuestionNo].push(time);
+            } else {
+                if (time > 2) {
+                    singleQuestionTimer[currentSingleQuestionNo].push(time);
+                }
+            }
+        } else {
+            singleQuestionAnswer[currentSingleQuestionNo] = 0;
+            if (time > 2) {
+                singleQuestionTimer[currentSingleQuestionNo].push(time);
+            }
+        }
+        time = 0;
+    }
+    function getSingleAnswer() {
+        var singleAnswerSheet = [];
+        if (singleList.length > 0) {
+            for (var i = 0; i < singleList.length; i++) {
+                var answer = singleQuestionAnswer[i];
+                var miniseconds = singleQuestionTimer[i];
+                if (mixSelectionFlag) {
+                    var answerIndex = singleQuestionAnswer[i] - 1;
+                    if (answerIndex > 0) {
+                        answer = singleMixSelection[answerIndex] + 1;
+                    }                 
+                }
+                singleAnswerSheet.push({
+                    answer: answer,
+                    miniseconds: miniseconds
+                });
+            }
+            if (mixOrderFlag) {
+                singleAnswerSheet = restoreByNewIndex(singleMixOrder, singleAnswerSheet);
+            }
+        }   
+        answerSheet['singles'] = singleAnswerSheet;
+    }
+</script>

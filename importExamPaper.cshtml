@@ -1,0 +1,157 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="~/Images/MainDash.ico" />
+    <title>BizExam Import Exam Paper</title>
+
+    <link rel="stylesheet" type="text/css" href="Content/css/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="Content/css/main.css" />
+    <link rel="stylesheet" href="Content/css/common.css">
+    <link rel="stylesheet" type="text/css" href="~/Content/css/doublebox-bootstrap.css" />
+
+    <script src="~/Scripts/js/jquery-3.3.1.min.js"></script>
+    <script src="~/Scripts/js/respond.min.js"></script>
+
+    <script src="~/Scripts/js/bootstrap.min.js"></script>
+    <script>
+        function importExamPaper() {
+            //create from object
+            var formData = new FormData();
+            var importFileBtn = $(".filebutton")[0];
+            //read file
+            /*var reader = new FileReader();
+            reader.onload = function (e) {
+                var dataURL = e.target.result; //data: application / vnd.openxmlformats -officedocument.spreadsheetml.sheet;base64...            
+                console.log(dataURL);
+            }*/
+            var file = importFileBtn.files[0];
+            if (!file) {
+                alert('No select any exam paper file!');
+                return;
+            }
+            //reader.readAsDataURL(file);
+            formData.append("file", file);
+            $.ajax({
+                url: "putexam.ashx",
+                type: "post",
+                cache: false,
+                data: formData,
+                processData: false,
+                contentType: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert("Failed request");
+                },
+                success: function (data) {
+                    alert(data);
+                }
+            });
+        }
+        function exportExamPaper0() {
+            $.ajax({           
+                type: 'post',
+                data: { '_id': 'Sheet1' },
+                //dataType: 'json',
+                dataType: "json",
+                contentType : 'application/json',
+                url: 'getPaper.ashx',
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert('Failed request');
+                },
+                success: function (data) {
+                    alert(data);
+                    /*var elink = document.createElement('a');
+                    elink.download = filename;
+                    elink.style.display = 'none';
+                    var blob = new Blob([data]);
+                    elink.href = URL.createObjectURL(blob);
+                    elink.download = 'examPaper.xlsx';
+                    document.body.appendChild(elink);
+                    elink.click();
+                    document.body.removeChild(elink);*/
+                }
+            });
+
+
+
+            /*$.ajax({
+                url: "./face.jpg",
+                type: "get",
+                dataType: "blob", //扩展出了blob类型
+            }).done(function (data, status, jqXHR) {
+                var reader = new window.FileReader();
+                reader.readAsDataURL(data);
+                reader.onloadend = function () {
+                    document.getElementById("img").src = reader.result;
+                }
+            }).fail(function (jqXHR, textStatus) {
+                console.warn(textStatus);
+            });*/
+        }
+        function exportExamPaper() {
+            var url = 'getPaper.ashx';
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);    // 也可以使用POST方式，根据接口
+            xhr.responseType = "blob";  // 返回类型blob
+            // 定义请求完成的处理函数，请求前也可以增加加载框/禁用下载按钮逻辑
+            xhr.onload = function () {
+                // 请求完成
+                if (this.status === 200) {
+                    // 返回200
+                    var blob = this.response;
+                    var reader = new FileReader();
+                    reader.readAsDataURL(blob);  // 转换为base64，可以直接放入a表情href
+                    reader.onload = function (e) {
+                        // 转换完成，创建一个a标签用于下载
+                        var a = document.createElement('a');
+                        a.download = 'data.xlsx';
+                        a.href = e.target.result;
+                        $("body").append(a);  // 修复firefox中无法触发click
+                        a.click();
+                        $(a).remove();
+                    }
+                }
+            };
+            // 发送ajax请求
+            xhr.send()
+        }
+    </script>
+</head>
+<body>
+    <div class='main'>
+        <p>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#importExamPaperModal">Import</button>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#exportExamPaperModal">Export</button>
+        </p>
+    </div>
+    <div class="modal fade" id="importExamPaperModal" tabindex="-1" role="dialog" aria-labelledby="importExamPaperModal" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="padding: 20px 0px;">
+                <p>
+                    <strong style="width:150px;">Import ExamPaper: </strong>
+                    <input id="file" name="file" class="filebutton" type="file" style="width:185px;">
+                </p>
+                <p>
+                    <button class="changeinfo-btu btn btn-primary" id="importExamPaper" onclick="importExamPaper()">Import</button>
+                    <button class="changeinfo-cancel btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="exportExamPaperModal" tabindex="-1" role="dialog" aria-labelledby="exportExamPaperModal" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="padding: 20px 0px;">
+                <p>
+                    <strong style="width:150px;">Export ExamPaper Id: </strong>
+                    <input type="text" id="exportExamPaper" style="width:185px;">
+                </p>
+                <p>
+                    <button class="changeinfo-btu btn btn-primary" id="exportExamPaper" onclick="exportExamPaper()">Import</button>
+                    <button class="changeinfo-cancel btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

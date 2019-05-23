@@ -1,0 +1,31 @@
+﻿@using BizATWebCommon;
+@using MongoDB.Bson;
+@{
+    string successFlag = Request.QueryString["success"];
+}
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>提交试卷</title>
+
+
+    <script src="~/Scripts/js/jquery-1.11.1.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="Content/css/bootstrap.min.css">
+    <script src="~/Scripts/js/popper.min.js"></script>
+    <script src="~/Scripts/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="~/Scripts/js/jquery.cookie.js"></script>
+</head>
+<body>
+    <div style="font-weight: 600; font-size: 1.2rem;" id="submitExamPaper"></div>
+</body>
+<script>
+    var successFlag = '@successFlag';
+    if (successFlag == 'True') {
+        $('#submitExamPaper').html('你已成功提交试卷！');
+    } else {
+        $('#submitExamPaper').html('提交试卷失败！');
+    }
+</script>
+</html>

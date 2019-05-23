@@ -1,0 +1,389 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="~/Images/MainDash.ico" />
+    <title>BizExam</title>
+
+    <link rel="stylesheet" type="text/css" href="Content/css/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="Content/css/main.css" />
+    <link rel="stylesheet" href="Content/css/common.css">
+    <link rel="stylesheet" type="text/css" href="~/Content/css/doublebox-bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="~/Content/css/wangEditor.css" />
+
+    <script src="~/Scripts/js/jquery-3.3.1.min.js"></script>
+    <script src="~/Scripts/js/html5shiv.min.js"></script>
+    <script src="~/Scripts/js/respond.min.js"></script>
+    <script type="text/javascript" src="~/Scripts/js/doublebox-bootstrap.js"></script>
+    <script type="text/javascript" src="//unpkg.com/wangeditor/release/wangEditor.min.js"></script>
+
+    <script src="~/Scripts/js/popper.min.js"></script>
+    <script src="~/Scripts/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="~/Scripts/js/jquery.cookie.js"></script>
+    <script>
+        var currentExamPaperInfo = null;
+        var timer = null;
+        var time = 0;
+        //pause timer
+        var time_sec = 0;
+        var time_min = 0;
+        var time_hour = 0;
+        var pauseTimeArray = [];
+        //init answer sheet
+        var answerSheet = {
+            'tester': 'tester',
+            'id': null,
+            'dt': null,
+            'examPaperId': null,
+            'singles': [],
+            'TFs': [],
+            'multis': [],
+            'fillings': [],
+            'shorts': []
+        };
+        $(document).ready(function () {
+            //get exam paper info
+            getExamPaperInfo();
+            $('.nav-link').click(function (event, notCheckAnswerFlag) {
+                $('.tab-content').show();
+                //click tab button to next tab
+                if (!notCheckAnswerFlag) {
+                    checkAnswer();                  
+                }
+                getTimer();
+            })
+            $('#pauseModal').on('shown.bs.modal', function () {
+                startPauseTimer();
+                $('#stopPauseBtn').focus();
+            })
+            $('#pauseModal').on('hidden.bs.modal', function () {
+                stopPauseTimer();
+            })
+            $('#submitModal').on('shown.bs.modal', function () {
+                $('#submitConfrim').focus();
+            });
+            $('#lastTabModal').on('hidden.bs.modal', function () {
+                $('.tab-content').show();
+                getTimer();
+            })
+        })
+        //common
+        function getExamPaperInfo() {
+           $.ajax({
+                type: "post",
+                data: { "_id": "Sheet1"},
+                url: "GetExamPaper.ashx",
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert("requst failure");
+                },
+                success: function (data) {
+                    currentExamPaperInfo = JSON.parse(data);
+                    /*currentExamPaperInfo['single'] = [{
+                        stem: '单选题1',
+                        candidates: ['单选题1A', '单选题1B', '单选题1C', '单选题1D']
+                    }, {
+                        stem: '单选题2',
+                        candidates: ['单选题2A', '单选题2B', '单选题2C', '单选题2D']
+                    }, {
+                        stem: '单选题3',
+                        candidates: ['单选题3A', '单选题3B', '单选题3C', '单选题3D']
+                    }, {
+                        stem: '单选题4',
+                        candidates: ['单选题4A', '单选题4B', '单选题4C', '单选题4D']
+                    }, {
+                        stem: '单选题5',
+                        candidates: ['单选题5A', '单选题5B', '单选题5C', '单选题5D']
+                    }];*/
+                    mixOrderFlag = currentExamPaperInfo.mixOrder;
+                    mixSelectionFlag = currentExamPaperInfo.mixSelection;               
+                }
+           });
+        }       
+        function setFirstTabSelected() {
+            var oFirstTabButton = $('.nav-item').not('.tabDisabled').first().find('a');
+            if (oFirstTabButton.length != 0) {
+                oFirstTabButton.trigger('click', true);
+            } else {
+                $('#navigation').hide();
+                $('.tab-content').hide();
+                $('#noAnyQuestion').show();
+                return;
+            }         
+        }
+        function shuffleIndex(len) {
+            var indexArray = [...new Array(len).keys()];
+            console.log('defaultIndex:'+ indexArray);
+            for (var i = 0; i < len; i++) {
+                var randomIndex = parseInt(Math.random() * (len - 1));
+                var current = indexArray[i];
+                indexArray[i] = indexArray[randomIndex];
+                indexArray[randomIndex] = current;
+            }
+            return indexArray;
+        }
+        function formatByNewIndex(index, array) {
+            var newArray = [];
+            for (var i = 0; i < index.length; i++) {
+                var newIndex = index[i];
+                newArray[i] = array[newIndex];
+            }
+            return newArray;
+        }
+        function restoreByNewIndex(index, newArray) {
+            var beforeArray = [];
+            for (var i = 0; i < index.length; i++) {
+                var newIndex = index[i];
+                beforeArray[newIndex] = newArray[i];
+            }
+            return beforeArray;
+        }
+        function getValueFromParam(param) {
+            return currentExamPaperInfo[param];
+        }
+        function getTimer() {
+            time = 0;
+            clearInterval(timer);
+            timer = setInterval(function () {
+                time++;
+            }, 1000);
+        }
+        //click pause button
+        function startPause() {
+            $('.tab-content').hide();
+            clearInterval(timer);
+            time = 0;
+        }
+        function startPauseTimer() {
+            timer = setInterval(function () {
+                time ++;
+                time_sec ++;
+                if (time_sec > 59) {
+                    time_sec = 0;
+                    time_min++;
+                }
+                if (time_min > 59) {
+                    time_min = 0;
+                    time_hour++;
+                }
+                var str_sec = time_sec;
+                var str_min = time_min;
+                var str_hour = time_hour;
+                if (time_sec < 10) {
+                    str_sec = "0" + time_sec;
+                }
+                if (time_min < 10) {
+                    str_min = "0" + time_min;
+                }
+                if (time_hour < 10) {
+                    str_hour = "0" + time_hour;
+                }
+                var time_str = str_hour + ":" + str_min + ":" + str_sec;
+                $('#pauseTimer').html(time_str);
+            }, 1000);
+        }
+        function stopPauseTimer() {
+            //$('.tab-content').removeClass('hide');
+            $('.tab-content').show();
+            clearInterval(timer);
+            pauseTimeArray.push(time);
+            $('#pauseTimer').html('00:00:00');
+            time_sec = 0;
+            time_min = 0;
+            time_hour = 0;
+            getTimer();
+        }
+        function cancelSubmit() {
+            //$('.tab-content').removeClass('hide');
+            $('.tab-content').show();
+            getTimer();
+        }
+        function submitExamPaperInfo() {
+            checkAnswer();
+            getAnswerSheet();
+            $.ajax({
+                type: "post",
+                data: { "Answer": JSON.stringify(answerSheet) },
+                url: "PutExamSheet.ashx",
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    window.location.replace('submitExamPaper.cshtml?success=False');
+                },
+                success: function (data) {
+                    //window.location.replace('submitExamPaper.cshtml?success=' + data);
+                }
+            });
+        }
+        function navToNextTab() {
+            var currentTabBody = $('.body.active');
+            var currentTab = $('.nav-link.active');
+            var currentTabItem = currentTab.parent('.nav-item');
+            var nextTabItem = currentTabItem.nextAll().not('.tabDisabled').first();
+            if (nextTabItem && nextTabItem.length != 0) {
+                nextTabItem.find('a').trigger('click', true);
+                $('.body.active').find('.questionLabNo').eq(0).trigger('click', true);
+            } else {
+                $('#lastTabModal').modal('show');
+            }          
+        }
+        function setQuestionLabFocus(questionTab, index) {
+            var thisButton = $(questionTab).find('.questionLabNo').eq(index);
+            if (!thisButton.hasClass('active')) {
+                thisButton.parents(questionTab).children('button').removeClass('active');
+                thisButton.addClass('active');
+            }
+            thisButton.focus();
+        }
+        function getAnswerSheet() {
+            getSingleAnswer();
+            getMultiAnswer();
+            getFillingAnswer();
+            getTrueFalseAnswer();
+            getShortAnswer();
+            getPauseTime();
+        }
+        function getPauseTime() {
+            answerSheet['pauseTime'] = pauseTimeArray;
+        }
+        function checkAnswer() {
+            var tabName = $('.nav-link.active').attr('id');
+            switch (tabName) {
+                case 'singleTab':
+                    checkSingleAnswer();
+                    break;
+                case 'multiTab':
+                    checkMultiAnswer();
+                    break;
+                case 'fillingTab':
+                    checkFillingAnswer();
+                    break;
+                case 'trueFalseTab':
+                    checkTrueFalseAnswer();
+                    break;
+                case 'shortTab':
+                    checkShortAnswer();
+                    break;
+            }
+        }
+        function exit() {
+            window.location.replace("/login.cshtml");
+        }
+        function formatCharCode(index) {
+            return String.fromCharCode((65 + index));
+        }
+        function formatString(str) {
+            var replaceStr = '<input class="inputReset fillingInput" type="text">';
+            return str.replace(/_/g, replaceStr);
+        }
+        function arrayCompare(arr1, arr2) {
+            var ifSame = true;
+            if (arr1.length != arr2.length) {
+                ifSame = false;
+            } else {
+                arr1.forEach(function (item) {
+                    if (arr2.indexOf(item) === -1) {
+                        ifSame = false;
+                    }
+                });
+            }
+            return ifSame;
+        }
+    </script>
+</head>
+<body>
+    <div class="wholePage">
+        <div class="head">
+            <img class="banner" src="~/Images/IT-Fundamentals-logo.png">
+            <sapn class="exit" id="exit" onclick="exit()"><img src="~/Images/ICON/exit.png" alt="Exit" /></sapn>
+            <div class="clearboth"></div>
+            <div class="navigation" id="navigation">
+                <div class="actionBtns">
+                    <button id="confirmBtn" class="btn btn-primary" data-toggle="modal" data-target="#submitModal" onclick="startPause()">Submit</button>
+                    <button id="pasueBtn" class="btn btn-dark" data-toggle="modal" data-target="#pauseModal" onclick="startPause()">Pause</button>
+                </div>
+                <ul class="navigation1 nav nav-pills" role="tablist">
+                    <li class="nav-item tabDisabled">
+                        <a class="nav-link active " data-toggle="pill" href="#body1" id="singleTab">Single</a>
+                    </li>
+                    <li class="nav-item tabDisabled">
+                        <a class="nav-link" data-toggle="pill" href="#body2" id="multiTab">Multi</a>
+                    </li>
+                    <li class="nav-item tabDisabled">
+                        <a class="nav-link" data-toggle="pill" href="#body3" id="fillingTab">Filling</a>
+                    </li>
+                    <li class="nav-item tabDisabled">
+                        <a class="nav-link" data-toggle="pill" href="#body4" id="trueFalseTab">TrueFalse</a>
+                    </li>
+                    <li class="nav-item tabDisabled">
+                        <a class="nav-link " href="#body5" data-toggle="pill" id="shortTab">ShortQuestion</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="modal fade" id="navToNextTab">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content" style="padding: 20px 0px;">
+                    <p>确认切换到下一题？</p>
+                    <div class="navToNextTabBtns">
+                        <button id="navConfrim" data-dismiss="modal" class="btn btn-primary" onclick="navToNextTab()">确认</button>
+                        <button data-dismiss="modal" class="btn btn-secondary">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="lastTabModal">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content" style="padding: 20px 0px;">
+                    <p>已经是最后一道题？</p>
+                </div>
+            </div>
+        </div>
+        <div class="tab-content" style="display: none;">
+            <div id="body1" class="body container-fluid tab-pane active">
+                @RenderPage("single.cshtml")
+            </div>
+            <div id="body2" class="body container-fluid tab-pane">
+                @RenderPage("multi.cshtml")
+            </div>
+            <div id="body3" class="body container-fluid tab-pane">
+                @RenderPage("filling.cshtml")         
+            </div>
+            <div id="body4" class="body container-fluid tab-pane">
+                @RenderPage("trueFalse.cshtml")             
+            </div>
+            <div id="body5" class="body container-fluid tab-pane">
+                @RenderPage("shortQuestion.cshtml")            
+            </div>
+        </div>
+        <div id="noAnyQuestion" style="display: none;">
+            <h2>Failed to parse questions.</h2>
+        </div>
+    </div>
+    <div class="modal fade" id="submitModal" tabindex="-1" role="dialog" aria-labelledby="submitModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="padding: 20px 0px;">
+                <p>确认提交试卷？</p>
+                <div class="confirmSubmitPaperBtns">
+                    <button id="submitConfrim" class="btn btn-primary" data-dismiss="modal" onclick="submitExamPaperInfo()">确认</button>
+                    <button data-dismiss="modal" class="btn btn-secondary" onclick="cancelSubmit()">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="pauseModal" tabindex="-1" role="dialog" aria-labelledby="pauseModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                </div>
+                <div class="modal-body" style="padding:0;">
+                    <div id="pauseTimer">00:00:00</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" id="stopPauseBtn">返回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>

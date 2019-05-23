@@ -1,0 +1,166 @@
+﻿<div class="trueFalseList" id="trueFalseList">
+    <div class="trueFalseLabBtns" style="text-align: left; float:left; max-width: 900px;"></div>
+    <div class="clearboth"></div>
+    <div class="trueFalseQuestionItem" style="background-color: #f5f5f5; padding: 10px;">
+    </div>
+</div>
+<div class="modal fade" id="navToNextTab">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="padding: 20px 0px;">
+            <p>确认切换到下一题？</p>
+            <div class="navToNextTabBtns">
+                <button id="navConfrim" data-dismiss="modal">Confirm</button>&emsp;&emsp;&emsp;&emsp;
+                <button data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var trueFalseList = null;
+    var currentTrueFalseQuestionNo = 0;
+    var trueFalseQuestionAnswer = [];
+    var trueFalseQuestionTimer = [];
+    var trueFalseMixOrder = [];
+
+    $(document).ready(function () {
+        trueFalseList = getValueFromParam('TrueFalse') || [];
+        if (trueFalseList.length !== 0) {
+            refreshTrueFalseList();
+            setFirstTrueFalseSelected();
+        }       
+    })
+    function refreshTrueFalseList() {
+        var trueFalseListLabButtons = '';
+        var trueFalseListContent = '';
+        $('.nav .nav-item').eq(3).removeClass('tabDisabled');
+        if (mixOrderFlag) {
+            trueFalseMixOrder = shuffleIndex(trueFalseList.length);
+            trueFalseList = formatByNewIndex(trueFalseMixOrder, trueFalseList);
+        }
+        for (var i = 0; i < trueFalseList.length; i++) {
+            //init the timer of answer, include answer and time
+            trueFalseQuestionAnswer[i] = 0;
+            trueFalseQuestionTimer[i] = [];
+            //init the quesiton label button
+            trueFalseListLabButtons += '<button class="btn questionLabNo" type="button">' + (i + 1) + '</button>';
+            //init the question content
+            trueFalseListContent += '<div class="slide-container"><div class="stem">' + (i+1) + '. ' + trueFalseList[i] + '</div><ul class="candidates">';
+            trueFalseListContent += '<li tabindex="0">A. true</li>';
+            trueFalseListContent += '<li tabindex="0">B. false</li>';
+            trueFalseListContent += '</ul>';
+            if (i == 0) {
+                trueFalseListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled>上一题</button>';
+            } else {
+                trueFalseListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous">上一题</button>';
+            }
+            trueFalseListContent += '<span class="labNo">' + (i + 1) + '</span><span>/</span><span>' + trueFalseList.length + '</span>';
+            trueFalseListContent += '<button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button></div></div>';
+        }
+        $(".trueFalseLabBtns").html(trueFalseListLabButtons);
+        $('.trueFalseQuestionItem').html(trueFalseListContent);
+
+        //select at least one answer
+        $('.trueFalseQuestionItem').find('li').click(function () {
+            trueFalseCandidatesToggle($(this));
+        });
+        $('.trueFalseQuestionItem').find('li').keydown(function (event) {
+            var event = event || window.event;
+            var keyCode = event.keyCode;
+            if (keyCode == 13) {
+                trueFalseCandidatesToggle($(this));
+            }
+        });
+        //click next button
+        $('.trueFalseQuestionItem').find('.nav_next').click(function () {
+            checkTrueFalseAnswer();
+            if (currentTrueFalseQuestionNo < trueFalseList.length - 1) {
+                currentTrueFalseQuestionNo ++;
+            } else {
+                $('.tab-content').hide();
+                $('#navToNextTab').modal('show');
+                return false;
+            }
+            $(this).parents('.slide-container').fadeOut(500,
+                function () {
+                    $(this).next().fadeIn(500, getTimer);
+                }
+            );
+            setQuestionLabFocus('.trueFalseLabBtns', currentTrueFalseQuestionNo);
+        });
+        //click prev button
+        $('.trueFalseQuestionItem').find('.nav_previous').click(function () {
+            checkTrueFalseAnswer();
+            currentTrueFalseQuestionNo --;
+            $(this).parents('.slide-container').fadeOut(500,
+                function () {
+                    $(this).prev().fadeIn(500, getTimer);
+                }
+            );
+            setQuestionLabFocus('.trueFalseLabBtns', currentTrueFalseQuestionNo);
+        });
+        //click question lab button
+        $('.trueFalseLabBtns').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
+            if (!notCheckAnswer) {
+                checkTrueFalseAnswer();
+            }
+            var index = $(this).index();
+            $('.trueFalseQuestionItem .slide-container').hide();
+            $('.trueFalseQuestionItem .slide-container').eq(index).fadeIn(500, getTimer);
+            currentTrueFalseQuestionNo = index;
+            setQuestionLabFocus('.trueFalseLabBtns', index);
+        });
+    }
+    function trueFalseCandidatesToggle(item) {
+        var thisLabNo = $('.trueFalseLabBtns .questionLabNo').eq(currentTrueFalseQuestionNo);
+        if (item.hasClass('selected')) {
+            item.removeClass('selected');
+            thisLabNo.removeClass('selected');
+        } else {
+            item.parents('.candidates').children('li').removeClass('selected');
+            item.addClass('selected');
+            thisLabNo.addClass('selected');
+        }
+    }
+    function setFirstTrueFalseSelected() {
+        $('.trueFalseQuestionItem .slide-container').hide();
+        $('.trueFalseQuestionItem .slide-container').eq(0).fadeIn(500);
+        setQuestionLabFocus('.trueFalseLabBtns', 0);
+    }
+    function checkTrueFalseAnswer() {
+        clearInterval(timer);
+        var ifAnswer = $('.trueFalseLabBtns .questionLabNo').eq(currentTrueFalseQuestionNo).hasClass('selected');
+        if (ifAnswer) {
+            var questionItem = $('.trueFalseQuestionItem .candidates').eq(currentTrueFalseQuestionNo);
+            var answer = questionItem.find('li.selected');
+            if(trueFalseQuestionAnswer[currentTrueFalseQuestionNo] != answer.index() + 1){
+                trueFalseQuestionAnswer[currentTrueFalseQuestionNo] = answer.index() + 1;
+                trueFalseQuestionTimer[currentTrueFalseQuestionNo].push(time);
+            } else {
+                if (time > 2) {
+                    trueFalseQuestionTimer[currentTrueFalseQuestionNo].push(time);
+                }
+            }
+        } else {
+            trueFalseQuestionAnswer[currentTrueFalseQuestionNo] = 0;
+            if (time > 2) {
+                trueFalseQuestionTimer[currentTrueFalseQuestionNo].push(time);
+            }
+        }    
+        time = 0;    
+    };
+    function getTrueFalseAnswer() {
+        var trueFalseAnswerSheet = [];
+        if (trueFalseList.length > 0) {
+            for (var i = 0; i < trueFalseList.length; i++) {
+                trueFalseAnswerSheet.push({
+                    answer: trueFalseQuestionAnswer[i],
+                    miniseconds: trueFalseQuestionTimer[i]
+                });
+            }
+        }
+        if (mixOrderFlag) {
+            trueFalseAnswerSheet = restoreByNewIndex(trueFalseMixOrder, trueFalseAnswerSheet);
+        }
+        answerSheet['TFs'] = trueFalseAnswerSheet;
+    }
+</script>
