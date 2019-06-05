@@ -1,157 +1,177 @@
 ﻿<div class="multiList" id="multiList">
-    <div class="multiLabBtns" style="text-align: left; float:left; max-width: 900px;"></div>
+    <div class="multiLabBtns left questionLabBtns"></div>
     <div class="clearboth"></div>
-    <div class="multiQuestionItem" style="background-color: #f5f5f5; padding: 10px;">
+    <div class="multiQuestionItem bgColor smallPadding">
+        <div class="slide-container">
+            <div class="stem"></div>
+            <ul class="candidates">
+            </ul>
+            <div class="nav-container">
+                <button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled="disabled">上一题</button>
+                <span class="labNo">0</span>
+                <span>/</span>
+                <span class="totalNo">0</span>
+                <button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button>
+            </div>
+        </div>
     </div>
 </div>
 <script>
-    var multiList = null;
-    var currentMultiQuestionNo = 0;
-    var multiQuestionAnswer = [];
-    var multiQuestionTimer = [];
-    $(document).ready(function () {
-        multiList = getValueFromParam('multi') || [];
-        if (multiList.length !== 0) {
+    var currentMultiQuestionNum = 0;
+    $(document).ready(function(){
+        if(multiNum > 0){
+        	//init multi answer
+            initMultiAnswerSheet();
             refreshMultiList();
-            setFirstMultiSelected();
         }
     })
-    function refreshMultiList() {
+    function initMultiAnswerSheet(){
+    	for (var i = 0; i < multiNum; i++) {
+            answerSheet['multis'].push({
+                answer: [],
+                miniseconds: []
+            });
+        }
+    }
+    function refreshMultiList(){
+        var previousBtn = $('.multiList').find('.nav_previous');
+    	//create question lab
         var multiListLabButtons = '';
-        var multiListContent = '';
-        var candidatesIndex = '';
-        $('.nav .nav-item').eq(1).removeClass('tabDisabled');
-        for (var i = 0; i < multiList.length; i++) {          
-            //init the timer of answer, include answer and time
-            multiQuestionAnswer[i] = [];
-            multiQuestionTimer[i] = [];
-            //init the quesiton label button
+        for (var i = 0; i < multiNum; i++) {
             multiListLabButtons += '<button class="btn questionLabNo" type="button">' + (i + 1) + '</button>';
-            //init the question content
-            multiListContent += '<div class="slide-container"><div class="stem">' + (i + 1) + '. ' + multiList[i].stem + '</div><ul class="candidates">';
-            for (var j = 0; j < multiList[i].candidates.length; j++) {
-                candidatesIndex = formatCharCode(j);
-                multiListContent += '<li tabindex="0">' + candidatesIndex + '. ' + multiList[i].candidates[j] + '</li>';
-            }
-            multiListContent += '</ul>';
-            if (i == 0) {
-                multiListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled>上一题</button>';
-            } else {
-                multiListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous">上一题</button>';
-            }
-            multiListContent += '<span class="labNo">' + (i + 1) + '</span><span>/</span><span>' + multiList.length + '</span>';
-            multiListContent += '<button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button></div></div>';
         }
         $(".multiLabBtns").html(multiListLabButtons);
-        $('.multiQuestionItem').html(multiListContent);
-        
-        //select at least one answer
-        $('.multiQuestionItem').find('li').click(function () {
-            multiCandidatesToggle($(this));         
+
+        //refresh question total num
+        $('.multiQuestionItem .totalNo').html(multiNum);
+
+        $('.nav .nav-item').eq(1).removeClass('tabDisabled');
+
+        //click question lab button
+        $('.multiList').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
+            if(!notCheckAnswer){
+                updateMultiAnswer();
+            }           
+            currentMultiQuestionNum = $(this).index();
+            renderMultiQuestion();
+            if (currentMultiQuestionNum == 0) {
+                setBtnDisabled(previousBtn);
+            }else{
+                setBtnEnabled(previousBtn);
+            }
         });
-        $('.multiQuestionItem').find('li').keydown(function (event) {
+
+        //click next button
+        $('.multiList').find('.nav_next').click(function () {
+            updateMultiAnswer();          
+            if (currentMultiQuestionNum < multiNum - 1) {
+                currentMultiQuestionNum++;
+                renderMultiQuestion();
+                setBtnEnabled(previousBtn);
+            } else {
+                emptyMultiQuestion();
+                $('.tab-content').hide();
+                $('#navToNextTab').modal('show');
+            }
+        });
+
+        //click prev button
+        $('.multiList').find('.nav_previous').click(function () {
+            updateMultiAnswer();
+            if (currentMultiQuestionNum > 0) {
+                currentMultiQuestionNum--;
+                if (currentMultiQuestionNum == 0) {
+                    setBtnDisabled(previousBtn);
+                }
+            }
+            renderMultiQuestion();          
+        });
+
+        //only select at least one answer will trigger
+        $('.multiQuestionItem').on('change', 'input', function () {
+            var answers = $(".multiQuestionItem input:checkbox[name='candidates']:checked");
+            var ifChecked = $(this).is(':checked');
+            var liItem = $(this).parents('li');
+            if(ifChecked){
+                liItem.addClass('selected');
+            } else {
+                liItem.removeClass('selected');
+            }
+            if(answers.length > 0){
+                $('.multiLabBtns .questionLabNo').eq(currentMultiQuestionNum).addClass('selected');
+            } else {
+                $('.multiLabBtns .questionLabNo').eq(currentMultiQuestionNum).removeClass('selected');
+            }
+        });
+
+        //support keyboard event
+        $('.multiQuestionItem').on('keydown', 'input', function (event) {
             var event = event || window.event;
             var keyCode = event.keyCode;
             if (keyCode == 13) {
-                multiCandidatesToggle($(this));
+                $(this).trigger('click');
             }
-        });
-        //click next button
-        $('.multiQuestionItem').find('.nav_next').click(function () {
-            checkMultiAnswer();
-            if (currentMultiQuestionNo < multiList.length - 1) {
-                currentMultiQuestionNo ++;
-            } else {
-                $('.tab-content').hide();
-                $('#navToNextTab').modal('show');
-                return false;
-            }
-            $(this).parents('.slide-container').fadeOut(500,
-                function () {
-                    $(this).next().fadeIn(500, getTimer);
-                }
-            );
-            setQuestionLabFocus('.multiLabBtns', currentMultiQuestionNo);
-        });
-        //click prev button
-        $('.multiQuestionItem').find('.nav_previous').click(function () {
-            checkMultiAnswer();
-            currentMultiQuestionNo --;
-            $(this).parents('.slide-container').fadeOut(500,
-                function () {
-                    $(this).prev().fadeIn(500, getTimer);
-                }
-            );
-            setQuestionLabFocus('.multiLabBtns', currentMultiQuestionNo);
-        });
-        //click question lab button
-        $('.multiLabBtns').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
-            if (!notCheckAnswer) {
-                checkMultiAnswer();
-            }
-            var index = $(this).index();
-            $('.multiQuestionItem .slide-container').hide();
-            $('.multiQuestionItem .slide-container').eq(index).fadeIn(500, getTimer);
-            currentMultiQuestionNo = index;
-            setQuestionLabFocus('.multiLabBtns', index);
-        });
+        })
     }
-    function multiCandidatesToggle(item) {
-        var thisLabNo = $('.multiLabBtns .questionLabNo').eq(currentMultiQuestionNo);
-        if (item.hasClass('selected')) {
-            item.removeClass('selected');
-        } else {
-            item.addClass('selected');
-        }
-        if (item.parents('.slide-container').find('li.selected').length === 0) {
-            thisLabNo.removeClass('selected');
-        } else {
-            thisLabNo.addClass('selected');
-        }
-    }
-    function setFirstMultiSelected() {
-        $('.multiQuestionItem .slide-container').hide();
-        $('.multiQuestionItem .slide-container').eq(0).fadeIn(500);
-        setQuestionLabFocus('.multiLabBtns', 0);
-    }
-    function checkMultiAnswer() {
+    function updateMultiAnswer() {
         clearInterval(timer);
-        var ifAnswer = $('.multiLabBtns .questionLabNo').eq(currentMultiQuestionNo).hasClass('selected');
-        if (ifAnswer) {
-            var questionItem = $('.multiQuestionItem .candidates').eq(currentMultiQuestionNo);
-            var candidatesItems = questionItem.find('li');
-            var answers = [];
-            for (var i = 0; i < candidatesItems.length; i++) {
-                if ($(candidatesItems[i]).hasClass('selected')) {
-                    answers.push(i + 1);
-                }
-            }
-            if (!arrayCompare(multiQuestionAnswer[currentMultiQuestionNo], answers)) {
-                multiQuestionAnswer[currentMultiQuestionNo] = answers;
-                multiQuestionTimer[currentMultiQuestionNo].push(time);
-            } else {
-                if (time > 2) {
-                    multiQuestionTimer[currentMultiQuestionNo].push(time);
-                }
-            }       
-        } else {
-            multiQuestionAnswer[currentMultiQuestionNo] = [];
-            if (time > 2) {
-                multiQuestionTimer[currentMultiQuestionNo].push(time);
-            }
-        }      
-        time = 0;
-    };
-    function getMultiAnswer() {
-        var multiAnswerSheet = [];
-        if (multiList.length > 0) {
-            for (var i = 0; i < multiList.length; i++) {
-                multiAnswerSheet.push({
-                    answer: multiQuestionAnswer[i],
-                    miniseconds: multiQuestionTimer[i]
-                });
-            }
+        var candidatesNum = $('.multiQuestionItem input[name="candidates"]').length;
+        var answer = [];
+        $(".multiQuestionItem input:checkbox[name='candidates']:checked").each(function(){
+            var actualAnswer = getMixSelectionArray(candidatesNum, Number($(this).val()));
+            answer.push(actualAnswer);
+        })
+        var actualMultiNum = getMixOrderArray(multiNum, currentMultiQuestionNum);
+        var currentAnswer = answerSheet['multis'][actualMultiNum]['answer'];
+        var ifChangeAnswer = arrayCompare(currentAnswer, answer);
+        //if select or change any answer
+        if(!ifChangeAnswer){
+            answerSheet['multis'][actualMultiNum]['answer'] = answer;
+            answerSheet['multis'][actualMultiNum]['miniseconds'].push(time, answer);
+        }else{
+            if(time > 2){
+                answerSheet['multis'][actualMultiNum]['miniseconds'].push(time, answer);
+            } 
         }
-        answerSheet['multis'] = multiAnswerSheet;
     }
+    function restoreMultiAnswer(){
+        var actualMultiNum = getMixOrderArray(multiNum, currentMultiQuestionNum);
+        var answerObj = answerSheet['multis'][actualMultiNum];
+        var answer = answerObj['answer'];
+        if(answer.length > 0){
+            var candidatesNum = $('.multiQuestionItem input[name="candidates"]').length;
+            for(var i=0; i<answer.length; i++){
+                var currentMultiAnswer = returnMixSelectionArray(candidatesNum, answer[i]);
+                $('.multiQuestionItem .candidates').find('input').eq(currentMultiAnswer).attr('checked', 'checked');
+                $('.multiQuestionItem .candidates').find('li').eq(currentMultiAnswer).addClass('selected');      
+            }        
+        }
+    }
+    function emptyMultiQuestion(){
+        $('.multiQuestionItem .stem').html('');
+        $('.multiQuestionItem .candidates').html('');
+    }
+    function renderMultiQuestion() {
+        var actualMultiNum = getMixOrderArray(multiNum, currentMultiQuestionNum);
+        var questionInfo = getQuestionInfo('multi', actualMultiNum);
+        emptyMultiQuestion();
+        if (questionInfo) {
+            var stem = questionInfo.stem;
+            var candidatesStr = '';
+            var candidates = questionInfo.candidates;
+            for (var j = 0; j < candidates.length; j++) {
+
+                var candidatesIndex = getMixSelectionArray(candidates.length, j);
+                var charCode = formatCharCode(j);
+                var selection = candidates[candidatesIndex];
+                candidatesStr += '<li><input type="checkbox" id="' + charCode + '" name="candidates" value="' + j + '"><label style="width: 90%;" for="' + charCode + '">' + selection + '</label></li>';
+            }
+            $('.multiQuestionItem .stem').html((currentMultiQuestionNum + 1) + '.' + stem);
+            $('.multiQuestionItem .candidates').html(candidatesStr);
+            $('.multiQuestionItem .labNo').html(currentMultiQuestionNum + 1);
+            setQuestionLabFocus('.multiLabBtns', currentMultiQuestionNum);
+            restoreMultiAnswer();
+            getTimer();
+        }
+    }    
 </script>

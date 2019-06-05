@@ -3,7 +3,6 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="~/Images/MainDash.ico" />
     <title>BizExam Import Exam Paper</title>
 
     <link rel="stylesheet" type="text/css" href="Content/css/bootstrap.min.css">
@@ -16,22 +15,64 @@
 
     <script src="~/Scripts/js/bootstrap.min.js"></script>
     <script>
+        var allPaperList = [];
+        var allPaperId = [];
+        var examPaperNum = 0;
+        $(document).ready(function () {
+            getAllPaper();
+        });
+        function getAllPaper() {
+            $.ajax({
+                type: "post",
+                url: "/common/GetAllPaper.ashx",
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert("requst failure!");
+                },
+                success: function (data) {
+                    allPaperList = JSON.parse(data);
+                    if (allPaperList.length != 0) {
+                        refreshExamPaperList();
+                    }
+                }
+            });
+        }
+        function refreshExamPaperList() {
+            clearTableNoDataText();
+            for (var i = 0; i < allPaperList.length; i++) {
+                addNewExamPaper(allPaperList[i]);
+            }
+        }
+        function clearTableNoDataText() {
+            var noDataText = $('.noDataText');
+            if (noDataText && noDataText.length != 0) {
+                noDataText.remove();
+            }
+        }
+        function addNewExamPaper(examInfo, rowIndex) {
+            var rowIndex = rowIndex;
+            var id = examInfo['_id'];
+            var name = examInfo.name;
+            if (rowIndex == -1 || rowIndex == undefined) {
+                allPaperId.push(id);
+                examPaperNum++;
+                var tr = '<tr><td>' + examPaperNum + '</td><td>' + id + '</td><td>' + name + '</td></td>';
+                tr += '<td><button class="btn btn-secondary" onclick=' + 'exportExamPaper' + '("' + id + '")' + '>Export</button></td></tr>';
+                $('#examPaperTable').append(tr);
+            } else {
+                var tr = '<td>' + (rowIndex + 1) + '</td><td>' + id + '</td><td>' + name + '</td></td>';
+                tr += '<td><button class="btn btn-secondary" onclick=' + 'exportExamPaper' + '("' + id + '")' + '>Export</button></td>';
+                $("#examPaperTable tbody tr").eq(rowIndex).html(tr);
+            }
+        }
         function importExamPaper() {
-            //create from object
             var formData = new FormData();
             var importFileBtn = $(".filebutton")[0];
-            //read file
-            /*var reader = new FileReader();
-            reader.onload = function (e) {
-                var dataURL = e.target.result; //data: application / vnd.openxmlformats -officedocument.spreadsheetml.sheet;base64...            
-                console.log(dataURL);
-            }*/
             var file = importFileBtn.files[0];
             if (!file) {
                 alert('No select any exam paper file!');
                 return;
             }
-            //reader.readAsDataURL(file);
             formData.append("file", file);
             $.ajax({
                 url: "/common/putexam.ashx",
@@ -44,86 +85,87 @@
                     alert("Failed request");
                 },
                 success: function (data) {
-                    alert(data);
+                    //alert(data);
+                    var examPaperInfo = JSON.parse(data);
+                    var id = examPaperInfo['_id'];
+                    var index = checkUnique(id);
+                    addNewExamPaper(examPaperInfo, index);
+                    $('.filebutton')[0].outerHTML = $('.filebutton')[0].outerHTML;
+                    $('#importExamPaperModal').modal('hide');
                 }
             });
         }
-        function exportExamPaper0() {
-            $.ajax({           
-                type: 'post',
-                data: { '_id': 'Sheet1' },
-                //dataType: 'json',
-                dataType: "json",
-                contentType : 'application/json',
-                url: '/common/getPaper.ashx',
-                error: function (XMLHttpRequest, textStatus, errorThrown) {
-                    alert('Failed request');
-                },
-                success: function (data) {
-                    alert(data);
-                    /*var elink = document.createElement('a');
-                    elink.download = filename;
-                    elink.style.display = 'none';
-                    var blob = new Blob([data]);
-                    elink.href = URL.createObjectURL(blob);
-                    elink.download = 'examPaper.xlsx';
-                    document.body.appendChild(elink);
-                    elink.click();
-                    document.body.removeChild(elink);*/
+        function checkUnique(paperId) {
+            var arr = allPaperId || [];
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] == paperId) {
+                    return i;
                 }
-            });
-
-
-
-            /*$.ajax({
-                url: "./face.jpg",
-                type: "get",
-                dataType: "blob", //扩展出了blob类型
-            }).done(function (data, status, jqXHR) {
-                var reader = new window.FileReader();
-                reader.readAsDataURL(data);
-                reader.onloadend = function () {
-                    document.getElementById("img").src = reader.result;
-                }
-            }).fail(function (jqXHR, textStatus) {
-                console.warn(textStatus);
-            });*/
+            }
+            return -1;
         }
-        function exportExamPaper() {
-            var url = 'getPaper.ashx';
+        function exportExamPaper(sheetId) {
+            var id = sheetId || '';
+            if (!id) {
+                alert('Empty ExamPaper ID!');
+                return;
+            }
+            var formData = new FormData();
+            formData.append("_id", id);
+            var url = '/common/getPaper.ashx';           
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);    // 也可以使用POST方式，根据接口
-            xhr.responseType = "blob";  // 返回类型blob
-            // 定义请求完成的处理函数，请求前也可以增加加载框/禁用下载按钮逻辑
+            xhr.open('POST', url, true);
+            xhr.responseType = "blob";
             xhr.onload = function () {
-                // 请求完成
                 if (this.status === 200) {
-                    // 返回200
                     var blob = this.response;
                     var reader = new FileReader();
-                    reader.readAsDataURL(blob);  // 转换为base64，可以直接放入a表情href
+                    reader.readAsDataURL(blob);
                     reader.onload = function (e) {
-                        // 转换完成，创建一个a标签用于下载
                         var a = document.createElement('a');
-                        a.download = 'data.xlsx';
+                        a.download = 'examPaper.xlsx';
                         a.href = e.target.result;
-                        $("body").append(a);  // 修复firefox中无法触发click
+                        $("body").append(a);
                         a.click();
                         $(a).remove();
                     }
+                } else {
+                    alert("Failed Request!");
                 }
             };
-            // 发送ajax请求
-            xhr.send()
-        }
+            xhr.send(formData)
+        }       
     </script>
 </head>
 <body>
-    <div class='main'>
-        <p>
-            <button class="btn btn-primary" data-toggle="modal" data-target="#importExamPaperModal">Import</button>
-            <button class="btn btn-primary" data-toggle="modal" data-target="#exportExamPaperModal">Export</button>
-        </p>
+    <div class="wholePage">
+        <div class="head">
+            <img class="banner" src="~/Images/IT-Fundamentals-logo.png">
+            <sapn class="exit" id="exit" onclick="exit()"><img src="~/Images/ICON/exit.png" alt="Exit" /></sapn>
+            <div class="clearboth"></div>
+        </div>
+        <div class="examPaperHeader">
+            <h4 class="left">Exam Paper</h4>
+            <button class="btn btn-primary right importBtn" data-toggle="modal" data-target="#importExamPaperModal">Import</button>
+            <div class="clearboth"></div>
+        </div>
+        <div class="examPaperList">
+        </div>
+        <table class="table" id="examPaperTable">
+            <thead>
+                <tr style="background:#b8daff">
+                    <th style="width: 10%;">Order</th>
+                    <th style="width: 20%;">ID</th>
+                    <th style="width: 50%;">Name</th>
+                    <th style="width: 20%;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="noDataText">
+                    <td colspan="4">No exam Paper！</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <div class="modal fade" id="importExamPaperModal" tabindex="-1" role="dialog" aria-labelledby="importExamPaperModal" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -144,10 +186,10 @@
             <div class="modal-content" style="padding: 20px 0px;">
                 <p>
                     <strong style="width:150px;">Export ExamPaper Id: </strong>
-                    <input type="text" id="exportExamPaper" style="width:185px;">
+                    <input type="text" id="examPaperId" style="width:185px;">
                 </p>
                 <p>
-                    <button class="changeinfo-btu btn btn-primary" id="exportExamPaper" onclick="exportExamPaper()">Import</button>
+                    <button class="changeinfo-btu btn btn-primary" id="exportExamPaper" onclick="exportExamPaper()">Export</button>
                     <button class="changeinfo-cancel btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </p>
             </div>

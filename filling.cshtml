@@ -1,70 +1,94 @@
 ﻿<div class="fillingList" id="singleList">
-    <div class="fillingLabBtns" style="text-align: left; float:left; max-width: 900px;"></div>
-    <!--<div class="pauseBtn" style="width: 200px; float: right; margin: 20px 0px; text-align: right;">
-        <button class="btn btn-primary" data-toggle="modal" data-target="#pauseModal">Pause</button>
-    </div>-->
+    <div class="fillingLabBtns left questionLabBtns"></div>
     <div class="clearboth"></div>
-    <div class="fillingQuestionItem" style="background-color: #f5f5f5; padding: 10px;">
-    </div>
-</div>
-<div class="modal fade" id="navToNextTab">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="padding: 20px 0px;">
-            <p>确认切换到下一题？</p>
-            <div class="navToNextTabBtns">
-                <button id="navConfrim" data-dismiss="modal">Confirm</button>&emsp;&emsp;&emsp;&emsp;
-                <button data-dismiss="modal">Cancel</button>
+    <div class="fillingQuestionItem bgColor smallPadding">
+        <div class="slide-container">
+            <div class="stem"></div>
+            <div class="nav-container">
+                <button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled="disabled">上一题</button>
+                <span class="labNo">0</span>
+                <span>/</span>
+                <span class="totalNo">0</span>
+                <button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button>
             </div>
         </div>
     </div>
 </div>
 <script>
-    var fillingList = null;
-    var currentFillingQuestionNo = 0;
-    var fillingQuestionAnswer = [];
-    var fillingQuestionTimer = [];
-    var fillingMixOrder = [];
-
-    $(document).ready(function () {
-        fillingList = getValueFromParam('filling') || [];
-        if (fillingList.length !== 0) {
+    var currentFillingQuestionNum = 0;
+    $(document).ready(function(){
+        if(fillingNum > 0){
+            //init single answer
+            initFillingAnswerSheet();
             refreshFillingList();
-            setFirstFillingSelected();
-            initFillingAnswer();
-        }      
+        }
     })
-    function refreshFillingList() {
-        var fillingListLabBtns = '';
-        var fillingListContent = '';
-        $('.nav .nav-item').eq(2).removeClass('tabDisabled');
-        if (mixOrderFlag) {
-            fillingMixOrder = shuffleIndex(fillingList.length);
-            fillingList = formatByNewIndex(fillingMixOrder, fillingList);
+    function initFillingAnswerSheet(){
+        for (var i = 0; i < fillingNum; i++) {
+            answerSheet['fillings'].push({
+                answer: [],
+                miniseconds: []
+            });
         }
-        for (var i = 0; i < fillingList.length; i++) {
-            //init the timer of answer, include answer and time
-            fillingQuestionAnswer[i] = [];
-            fillingQuestionTimer[i] = [];
-            //init the filling question lab button
-            fillingListLabBtns += '<button class="btn questionLabNo" type="button">' + (i + 1) + '</button>';
-            //init the filling question content
-            var fillingStem = formatString(fillingList[i]);
-            fillingListContent += '<div class="slide-container"><div class="stem">' + (i+1) + '. ' + fillingStem + '</div>';
-            if (i == 0) {
-                fillingListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled>上一题</button>';
-            } else {
-                fillingListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous">上一题</button>';
-            }
-            fillingListContent += '<span class="labNo">' + (i + 1) + '</span><span>/</span><span>' + fillingList.length + '</span>';
-            fillingListContent += '<button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button></div></div>';
+    }
+    function refreshFillingList(){
+        var previousBtn = $('.fillingList').find('.nav_previous');
+        //create filling question lab
+        var fillingListLabButtons = '';
+        for (var i = 0; i < fillingNum; i++) {
+            fillingListLabButtons += '<button class="btn questionLabNo" type="button">' + (i + 1) + '</button>';
         }
-        $(".fillingLabBtns").html(fillingListLabBtns);
-        $('.fillingQuestionItem').html(fillingListContent);
+        $(".fillingLabBtns").html(fillingListLabButtons);
 
-        //fill any fileld
-        $('.fillingQuestionItem').find('input').change(function () {
-            var allInputEle = $('.fillingQuestionItem').find('.slide-container').eq(currentFillingQuestionNo).find('input');
-            var thisLabNo = $('.fillingLabBtns .questionLabNo').eq(currentFillingQuestionNo);
+        //refresh question total num
+        $('.fillingQuestionItem .totalNo').html(fillingNum);
+
+        $('.nav .nav-item').eq(2).removeClass('tabDisabled');
+
+        //click question lab button
+        $('.fillingList').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
+            if(!notCheckAnswer){
+                updateFillingAnswer();
+            }           
+            currentFillingQuestionNum = $(this).index();
+            renderFillingQuestion();
+            if (currentFillingQuestionNum == 0) {
+                setBtnDisabled(previousBtn);
+            }else{
+                setBtnEnabled(previousBtn);
+            }
+        });
+
+        //click next button
+        $('.fillingList').find('.nav_next').click(function () {
+            updateFillingAnswer();          
+            if (currentFillingQuestionNum < fillingNum - 1) {
+                currentFillingQuestionNum++;
+                renderFillingQuestion();
+                setBtnEnabled(previousBtn);
+            } else {
+                emptyFillingQuestion();
+                $('.tab-content').hide();
+                $('#navToNextTab').modal('show');
+            }
+        });
+
+        //click prev button
+        $('.fillingList').find('.nav_previous').click(function () {
+            updateFillingAnswer();
+            if (currentFillingQuestionNum > 0) {
+                currentFillingQuestionNum--;
+            }
+            renderFillingQuestion();
+            if (currentFillingQuestionNum == 0) {
+                setBtnDisabled(previousBtn);
+            }
+        });
+
+        //only select at least one answer will trigger
+        $('.fillingQuestionItem').on('change', 'input', function () {
+            var allInputEle = $('.fillingQuestionItem input');
+            var thisLabNo = $('.fillingLabBtns .questionLabNo').eq(currentFillingQuestionNum);
             var ifAnswer = false;
             for (var i = 0; i < allInputEle.length; i++) {
                 if ($(allInputEle[i]).val().trim() != '') {
@@ -77,102 +101,52 @@
                 thisLabNo.removeClass('selected');
             }
         });
-        //click next button
-        $('.fillingQuestionItem').find('.nav_next').click(function () {
-            checkFillingAnswer();
-            if (currentFillingQuestionNo < fillingList.length - 1) {
-                currentFillingQuestionNo++;
-            } else {
-                $('.tab-content').hide();
-                $('#navToNextTab').modal('show');
-                return false;
-            }
-            $(this).parents('.slide-container').fadeOut(500,
-                function () {
-                    $(this).next().fadeIn(500, getTimer);
-                }
-            );
-            setQuestionLabFocus('.fillingLabBtns', currentFillingQuestionNo);
-        });
-        //click previous button
-        $('.fillingQuestionItem').find('.nav_previous').click(function () {
-            checkFillingAnswer();
-            currentFillingQuestionNo--;
-            $(this).parents('.slide-container').fadeOut(500,
-                function () {
-                    $(this).prev().fadeIn(500, getTimer);
-                }
-            );
-            setQuestionLabFocus('.fillingLabBtns', currentFillingQuestionNo);
-        });
-        //click question lab button
-        $('.fillingLabBtns').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
-            if (!notCheckAnswer) {
-                checkFillingAnswer();
-            }
-            var index = $(this).index();
-            $('.fillingQuestionItem .slide-container').hide();
-            $('.fillingQuestionItem .slide-container').eq(index).fadeIn(500, getTimer);
-            currentFillingQuestionNo = index;
-            setQuestionLabFocus('.fillingLabBtns', index);
-        });
     }
-    function setFirstFillingSelected() {
-        $('.fillingQuestionItem .slide-container').hide();
-        $('.fillingQuestionItem .slide-container').eq(0).fadeIn(500);
-        setQuestionLabFocus('.fillingLabBtns', 0);
-    }
-    function initFillingAnswer() {
-        var questionItem = $('.fillingQuestionItem .candidates').eq(currentFillingQuestionNo);
-        var allInputEle = $('.fillingQuestionItem').find('.slide-container').eq(currentFillingQuestionNo).find('input');
-        for (var i = 0; i < allInputEle.length; i++) {
-            fillingQuestionAnswer[currentFillingQuestionNo][i] = '';
-        }
-    }
-    function checkFillingAnswer() {
+    function updateFillingAnswer(){
         clearInterval(timer);
-        var ifAnswer = $('.fillingLabBtns .questionLabNo').eq(currentFillingQuestionNo).hasClass('selected');
-        if (ifAnswer) {
-            var questionItem = $('.fillingQuestionItem .candidates').eq(currentFillingQuestionNo);
-            var allInputEle = $('.fillingQuestionItem').find('.slide-container').eq(currentFillingQuestionNo).find('input');
-            var answers = [];
-            var ifChangeAnswer = false;
-            for (var i = 0; i < allInputEle.length; i++) {
-                var content = $(allInputEle[i]).val().trim();
-                if (fillingQuestionAnswer[currentFillingQuestionNo][i] != content) {
-                    ifChangeAnswer = true;
-                }
-                answers.push($(allInputEle[i]).val().trim());
+        var actualFillingNum = getMixOrderArray(fillingNum, currentFillingQuestionNum);
+        var currentAnswer = answerSheet['fillings'][actualFillingNum]['answer'];
+        var answer = [];
+        $(".fillingQuestionItem input").each(function(){
+            if($(this).val().trim()){
+                answer[$(this).index()] = $(this).val().trim()
             }
-            if (ifChangeAnswer) {
-                fillingQuestionAnswer[currentFillingQuestionNo] = answers;
-                fillingQuestionTimer[currentFillingQuestionNo].push(time);
-            } else {
-                if (time > 2) {
-                    fillingQuestionTimer[currentFillingQuestionNo].push(time);
-                }
-            }
-        } else {
-            initFillingAnswer();
-            fillingQuestionAnswer[currentFillingQuestionNo] = [];
-            if (time > 2) {
-                fillingQuestionTimer[currentFillingQuestionNo].push(time);
-            }
+        });
+        var ifChangeAnswer = arrayCompare(currentAnswer, answer);
+        if(!ifChangeAnswer){
+            answerSheet['fillings'][actualFillingNum]['answer'] = answer;
+            answerSheet['fillings'][actualFillingNum]['miniseconds'].push(time, answer);
+        }else{
+            if(time > 2){
+                answerSheet['fillings'][actualFillingNum]['miniseconds'].push(time, answer);
+            } 
         }
     }
-    function getFillingAnswer() {
-        var fillingAnswerSheet = [];
-        if (fillingList.length > 0) {
-            for (var i = 0; i < fillingList.length; i++) {
-                fillingAnswerSheet.push({
-                    answer: fillingQuestionAnswer[i],
-                    miniseconds: fillingQuestionTimer[i]
-                });
-            }
+    function restoreFillingAnswer(){
+        var actualFillingNum = getMixOrderArray(fillingNum, currentFillingQuestionNum);
+        var answerObj = answerSheet['fillings'][actualFillingNum];
+        var answer = answerObj['answer'];
+        if(answer.length > 0){
+            for(var i=0; i<answer.length; i++){
+                $('.fillingQuestionItem input').eq(i).val(answer[i]);
+            }         
         }
-        if (mixOrderFlag) {
-            fillingAnswerSheet = restoreByNewIndex(fillingMixOrder, fillingAnswerSheet);
+    }
+    function emptyFillingQuestion(){
+        $('.fillingQuestionItem .stem').html('');
+        $('.fillingQuestionItem .candidates').html('');
+    }
+    function renderFillingQuestion(){
+        var actualFillingNum = getMixOrderArray(fillingNum, currentFillingQuestionNum);
+        var questionInfo = getQuestionInfo('filling', actualFillingNum);
+        emptyFillingQuestion();
+        if (questionInfo) {
+            var stem = formatString(questionInfo);
+            $('.fillingQuestionItem .stem').html((currentFillingQuestionNum + 1) + '.' + stem);
+            $('.fillingQuestionItem .labNo').html(currentFillingQuestionNum + 1);
+            setQuestionLabFocus('.fillingLabBtns', currentFillingQuestionNum);
+            restoreFillingAnswer();
+            getTimer();
         }
-        answerSheet['fillings'] = fillingAnswerSheet;
     }
 </script>

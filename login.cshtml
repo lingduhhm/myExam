@@ -4,8 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>登录</title>
-
-
+    <link type="text/css" rel="stylesheet" href="Content/css/login.css" />
     <script src="~/Scripts/js/jquery-1.11.1.min.js"></script>
     <link rel="stylesheet" type="text/css" href="Content/css/bootstrap.min.css">
     <script src="~/Scripts/js/popper.min.js"></script>
@@ -13,5 +12,82 @@
     <script type="text/javascript" src="~/Scripts/js/jquery.cookie.js"></script>
 </head>
 <body>
+	<div class="login container-fluid">
+        <form name="userInfo" method="post" onsubmit="">
+            <p class="caption">Biz Exam System</p>
+            <p>
+            	<input type="text" id="userId" class="userId userInput" name="userId" placeholder="UserId" />
+            </p>
+            <p>
+            	<input type="password" id="userPwd" autocomplete="off" class="userPwd userInput" name="userPwd" placeholder="PassWord" />
+            </p>
+            <input class="loginBtn" id="loginBtn" type="button" value="Login" onclick="submitForm()" />
+            <p id="hint" class="form_text_error"></p>
+        </form>
+    </div>
+    <script>
+    	$(document).ready(function(){
+    		if ($.cookie("userId") != undefined) {
+	            userInfo.userId.value = ($.cookie("userId"));
+	        }
+    		$('#userId').focus();
+    		$('#loginBtn').keydown(function(event){
+    			var event = event || window.event;
+    			var keyCode = event.keyCode;
+	            if (keyCode == 13) {
+	                $(this).click();
+	            }
+    		});
+    		$('input').bind('input propertychange',function () {
+    			var value = $(this).val().trim();
+    			if(value.length > 0){
+    				$(this).removeClass('form_error');
+    			}
+    		});
+    	})
+        function submitForm() {
+        	if(userInfo.userId.value == ''){
+        		alert('Please input your userId!');
+        		$('#userId').addClass('form_error');
+        		$('#userId').focus();
+        		return;
+        	}
+        	if(userInfo.userPwd.value == ''){
+        		alert('Please input your password!');
+        		$('#userPwd').addClass('form_error');
+        		$('#userPwd').focus();
+        		return;
+        	}
+        	if(userInfo.userId.value != $.cookie('userId')){
+        		$.cookie('username', userInfo.userId.value);
+        	}
+        	$.ajax({
+                type: "post",
+                data: { "_id": userInfo.userId.value, "password": userInfo.userPwd.value},
+                url: "/common/logincheck.ashx",
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert("Request Failed!");
+                },
+                success: function(data){
+                	var result = JSON.parse(data);
+                	if(typeof (result.fail) == 'undefined'){
+                		$('#hint').html("");
+						$.cookie("userId", result.testerid);
+                        window.location.href = "mainPage.cshtml?examId=" + result.examid;
+                	} else {
+                		if(result.fail == 1){
+                			$('#userId').addClass('form_error');
+                			$('#userId').focus();
+                		} else if(result.fail == 2){
+                			$('#userPwd').addClass('form_error');
+                			$('#userPwd').focus();
+                		}
+                		$('#hint').html(result.description);
+                	}
+                }
+            })
+        }
+    </script>
 </body>
 </html>

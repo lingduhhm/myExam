@@ -3,15 +3,16 @@
 using System;
 using System.Web;
 using System.IO;
-
+    using MongoDB.Bson;
+//将excel文件数据导入到数据库
 public class putexam : IHttpHandler {
 
     public void ProcessRequest (HttpContext context) {
         context.Response.ContentType = "text/plain";
         try
         {
-            // var filepath = context.Request["filepath"];
             var filepath = context.Request.Files[0];
+            var examname = filepath.FileName;
             var filename = filepath.InputStream;
             if(!filepath.FileName.EndsWith(".xls")&&!filepath.FileName.EndsWith(".xlsx"))
             {
@@ -20,21 +21,29 @@ public class putexam : IHttpHandler {
             }
             else
             {
-                ExamProcess.putexam newexam = new ExamProcess.putexam(filename);
-                context.Response.Write("Import Sucess!");
-        }
+                ExamProcess.putexam newexam = new ExamProcess.putexam(filename,examname);
+                exammess newmess = new exammess();
+                newmess.id = newexam.newexam._id;
+                newmess.name = examname;
+                context.Response.Write(newmess.ToJson());
+
+            }
 
         }
-        catch(Exception e)
+        catch
         {
-            context.Response.Write(e);
+            context.Response.Write("Import fail!Please check");
         }
     }
-
-    public bool IsReusable {
-    get {
-        return false;
+    public class exammess
+    {
+        public string name;
+        public string id;
     }
-}
+    public bool IsReusable {
+        get {
+            return false;
+        }
+    }
 
 }

@@ -1,3 +1,23 @@
+.scrollTable tr:not(:last-child) td, .scrollTable tr:not(:last-child) th, .nobottomborder tr:not(:last-child) td, .nobottomborder tr {
+    border-bottom: none;
+}
+.nobottomborder {
+    border-collapse: collapse;
+}
+.scrollTable tbody {
+    display: block;
+    height: 350px;
+    overflow-y: scroll;
+}
+.scrollTable thead,
+.scrollTable tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+.scrollTable thead {
+    width: calc( 100% - 1em)
+}
 .btn-danger, .btn-primary, .btn-info, .btn-success, .btn-secondary {
     width: 100px;
 }

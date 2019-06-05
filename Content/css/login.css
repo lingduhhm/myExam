@@ -1,0 +1,52 @@
+html {
+    height: 100%;
+}
+
+body {
+    text-align: center;
+    height: 100%;
+    display: flex;
+}
+.login {
+    text-align: center;
+    margin: auto;
+}
+.caption {
+    font-size: 22px;
+    font-weight: bold;
+}
+.login p {
+    margin-bottom: 25px;
+}
+.login p .import,
+.login p .userInput {
+    font-size: 16px;
+    width: 245px;
+    height: 30px;
+    line-height: 30px;
+    padding-left: 25px;
+    border: 1px solid #e9e9e9;
+    outline-color: #dedede;
+}
+.userInput {
+    background: url("/Images/ICON/icon_user.jpg") no-repeat;
+}
+
+.userPwd {
+    background: url("/Images/ICON/icon_pwd.jpg") no-repeat;
+}
+
+.loginBtn {
+    width: 245px;
+    font-size: 16px;
+    margin-bottom: 15px;
+    background-color: #5ab4ff;
+    border: 1px solid #5ab4ff;
+    cursor: pointer;
+}
+.login p input.form_error {
+    border-color: red;
+}
+.form_text_error {
+    color: red;
+}

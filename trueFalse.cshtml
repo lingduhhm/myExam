@@ -1,166 +1,160 @@
 ﻿<div class="trueFalseList" id="trueFalseList">
-    <div class="trueFalseLabBtns" style="text-align: left; float:left; max-width: 900px;"></div>
+    <div class="trueFalseLabBtns left questionLabBtns"></div>
     <div class="clearboth"></div>
-    <div class="trueFalseQuestionItem" style="background-color: #f5f5f5; padding: 10px;">
-    </div>
-</div>
-<div class="modal fade" id="navToNextTab">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="padding: 20px 0px;">
-            <p>确认切换到下一题？</p>
-            <div class="navToNextTabBtns">
-                <button id="navConfrim" data-dismiss="modal">Confirm</button>&emsp;&emsp;&emsp;&emsp;
-                <button data-dismiss="modal">Cancel</button>
+    <div class="trueFalseQuestionItem bgColor smallPadding">
+        <div class="slide-container">
+            <div class="stem"></div>
+            <ul class="candidates">
+            </ul>
+            <div class="nav-container">
+                <button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled="disabled">上一题</button>
+                <span class="labNo">0</span>
+                <span>/</span>
+                <span class="totalNo">0</span>
+                <button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button>
             </div>
         </div>
     </div>
 </div>
 <script>
-    var trueFalseList = null;
-    var currentTrueFalseQuestionNo = 0;
-    var trueFalseQuestionAnswer = [];
-    var trueFalseQuestionTimer = [];
-    var trueFalseMixOrder = [];
-
-    $(document).ready(function () {
-        trueFalseList = getValueFromParam('TrueFalse') || [];
-        if (trueFalseList.length !== 0) {
+    var currentTrueFalseQuestionNum = 0;
+    $(document).ready(function(){
+        if(trueFalseNum > 0){
+        	//init single answer
+            initTrueFalseAnswerSheet();
             refreshTrueFalseList();
-            setFirstTrueFalseSelected();
-        }       
-    })
-    function refreshTrueFalseList() {
-        var trueFalseListLabButtons = '';
-        var trueFalseListContent = '';
-        $('.nav .nav-item').eq(3).removeClass('tabDisabled');
-        if (mixOrderFlag) {
-            trueFalseMixOrder = shuffleIndex(trueFalseList.length);
-            trueFalseList = formatByNewIndex(trueFalseMixOrder, trueFalseList);
         }
-        for (var i = 0; i < trueFalseList.length; i++) {
-            //init the timer of answer, include answer and time
-            trueFalseQuestionAnswer[i] = 0;
-            trueFalseQuestionTimer[i] = [];
-            //init the quesiton label button
+    })
+    function initTrueFalseAnswerSheet(){
+    	for (var i = 0; i < trueFalseNum; i++) {
+            answerSheet['TFs'].push({
+                answer: -1,
+                miniseconds: []
+            });
+        }
+    }
+    function refreshTrueFalseList(){
+        var previousBtn = $('.trueFalseList').find('.nav_previous');
+    	//create question lab
+        var trueFalseListLabButtons = '';
+        for (var i = 0; i < trueFalseNum; i++) {
             trueFalseListLabButtons += '<button class="btn questionLabNo" type="button">' + (i + 1) + '</button>';
-            //init the question content
-            trueFalseListContent += '<div class="slide-container"><div class="stem">' + (i+1) + '. ' + trueFalseList[i] + '</div><ul class="candidates">';
-            trueFalseListContent += '<li tabindex="0">A. true</li>';
-            trueFalseListContent += '<li tabindex="0">B. false</li>';
-            trueFalseListContent += '</ul>';
-            if (i == 0) {
-                trueFalseListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous" disabled>上一题</button>';
-            } else {
-                trueFalseListContent += '<div class="nav-container"><button role="button" id="prevBtn" class="btn btn-secondary nav_previous">上一题</button>';
-            }
-            trueFalseListContent += '<span class="labNo">' + (i + 1) + '</span><span>/</span><span>' + trueFalseList.length + '</span>';
-            trueFalseListContent += '<button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button></div></div>';
         }
         $(".trueFalseLabBtns").html(trueFalseListLabButtons);
-        $('.trueFalseQuestionItem').html(trueFalseListContent);
 
-        //select at least one answer
-        $('.trueFalseQuestionItem').find('li').click(function () {
-            trueFalseCandidatesToggle($(this));
+        //refresh question total num
+        $('.trueFalseQuestionItem .totalNo').html(trueFalseNum);
+
+        $('.nav .nav-item').eq(3).removeClass('tabDisabled');
+
+        //click question lab button
+        $('.trueFalseList').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
+            if(!notCheckAnswer){
+                updateTrueFalseAnswer();
+            }            
+            currentTrueFalseQuestionNum = $(this).index();
+            renderTrueFalseQuestion();
+            if (currentTrueFalseQuestionNum == 0) {
+                setBtnDisabled(previousBtn);
+            }else{
+                setBtnEnabled(previousBtn);
+            }
         });
-        $('.trueFalseQuestionItem').find('li').keydown(function (event) {
+
+        //click next button
+        $('.trueFalseList').find('.nav_next').click(function () {
+            updateTrueFalseAnswer();          
+            if (currentTrueFalseQuestionNum < trueFalseNum - 1) {
+                currentTrueFalseQuestionNum++;
+                renderTrueFalseQuestion();
+                setBtnEnabled(previousBtn);
+            } else {
+                emptyTrueFalseQuestion();
+                $('.tab-content').hide();
+                $('#navToNextTab').modal('show');
+            }
+        });
+
+        //click prev button
+        $('.trueFalseList').find('.nav_previous').click(function () {
+            updateTrueFalseAnswer();
+            if (currentTrueFalseQuestionNum > 0) {
+                currentTrueFalseQuestionNum--;
+                if (currentTrueFalseQuestionNum == 0) {
+                    setBtnDisabled(previousBtn);
+                }
+            }
+            renderTrueFalseQuestion();            
+        });
+
+        //only select at least one answer will trigger
+        $('.trueFalseQuestionItem').on('change', 'input', function () {
+            $('.trueFalseLabBtns .questionLabNo').eq(currentTrueFalseQuestionNum).addClass('selected');
+            var val = $(this).val();
+            var liItem = $(this).parents('li');         
+            if(val != -1){
+                if (liItem.hasClass('selected')) {
+                    liItem.removeClass('selected');
+                } else {
+                    liItem.parents('.candidates').children('li').removeClass('selected');
+                    liItem.addClass('selected');
+                }
+            }
+        });
+
+        //support keyboard event
+        $('.trueFalseQuestionItem').on('keydown', 'input', function (event) {
             var event = event || window.event;
             var keyCode = event.keyCode;
             if (keyCode == 13) {
-                trueFalseCandidatesToggle($(this));
+                $(this).trigger('click');
             }
-        });
-        //click next button
-        $('.trueFalseQuestionItem').find('.nav_next').click(function () {
-            checkTrueFalseAnswer();
-            if (currentTrueFalseQuestionNo < trueFalseList.length - 1) {
-                currentTrueFalseQuestionNo ++;
-            } else {
-                $('.tab-content').hide();
-                $('#navToNextTab').modal('show');
-                return false;
-            }
-            $(this).parents('.slide-container').fadeOut(500,
-                function () {
-                    $(this).next().fadeIn(500, getTimer);
-                }
-            );
-            setQuestionLabFocus('.trueFalseLabBtns', currentTrueFalseQuestionNo);
-        });
-        //click prev button
-        $('.trueFalseQuestionItem').find('.nav_previous').click(function () {
-            checkTrueFalseAnswer();
-            currentTrueFalseQuestionNo --;
-            $(this).parents('.slide-container').fadeOut(500,
-                function () {
-                    $(this).prev().fadeIn(500, getTimer);
-                }
-            );
-            setQuestionLabFocus('.trueFalseLabBtns', currentTrueFalseQuestionNo);
-        });
-        //click question lab button
-        $('.trueFalseLabBtns').find('.questionLabNo').click(function (eventName, notCheckAnswer) {
-            if (!notCheckAnswer) {
-                checkTrueFalseAnswer();
-            }
-            var index = $(this).index();
-            $('.trueFalseQuestionItem .slide-container').hide();
-            $('.trueFalseQuestionItem .slide-container').eq(index).fadeIn(500, getTimer);
-            currentTrueFalseQuestionNo = index;
-            setQuestionLabFocus('.trueFalseLabBtns', index);
-        });
+        })
     }
-    function trueFalseCandidatesToggle(item) {
-        var thisLabNo = $('.trueFalseLabBtns .questionLabNo').eq(currentTrueFalseQuestionNo);
-        if (item.hasClass('selected')) {
-            item.removeClass('selected');
-            thisLabNo.removeClass('selected');
-        } else {
-            item.parents('.candidates').children('li').removeClass('selected');
-            item.addClass('selected');
-            thisLabNo.addClass('selected');
-        }
-    }
-    function setFirstTrueFalseSelected() {
-        $('.trueFalseQuestionItem .slide-container').hide();
-        $('.trueFalseQuestionItem .slide-container').eq(0).fadeIn(500);
-        setQuestionLabFocus('.trueFalseLabBtns', 0);
-    }
-    function checkTrueFalseAnswer() {
+    function updateTrueFalseAnswer(){
         clearInterval(timer);
-        var ifAnswer = $('.trueFalseLabBtns .questionLabNo').eq(currentTrueFalseQuestionNo).hasClass('selected');
-        if (ifAnswer) {
-            var questionItem = $('.trueFalseQuestionItem .candidates').eq(currentTrueFalseQuestionNo);
-            var answer = questionItem.find('li.selected');
-            if(trueFalseQuestionAnswer[currentTrueFalseQuestionNo] != answer.index() + 1){
-                trueFalseQuestionAnswer[currentTrueFalseQuestionNo] = answer.index() + 1;
-                trueFalseQuestionTimer[currentTrueFalseQuestionNo].push(time);
-            } else {
-                if (time > 2) {
-                    trueFalseQuestionTimer[currentTrueFalseQuestionNo].push(time);
-                }
-            }
+        var answer = typeof ($('.trueFalseQuestionItem input[name="candidates"]:checked').val()) == 'undefined' ? -1 : Number($('.trueFalseQuestionItem input[name="candidates"]:checked').val());
+        var actualTrueFalseNum = getMixOrderArray(trueFalseNum, currentTrueFalseQuestionNum);
+        var currentAnswer = answerSheet['TFs'][actualTrueFalseNum]['answer'];
+        //if select or change any answer
+        if(currentAnswer != answer){
+            answerSheet['TFs'][actualTrueFalseNum]['answer'] = answer;
+            answerSheet['TFs'][actualTrueFalseNum]['miniseconds'].push(time, answer);
         } else {
-            trueFalseQuestionAnswer[currentTrueFalseQuestionNo] = 0;
-            if (time > 2) {
-                trueFalseQuestionTimer[currentTrueFalseQuestionNo].push(time);
-            }
-        }    
-        time = 0;    
-    };
-    function getTrueFalseAnswer() {
-        var trueFalseAnswerSheet = [];
-        if (trueFalseList.length > 0) {
-            for (var i = 0; i < trueFalseList.length; i++) {
-                trueFalseAnswerSheet.push({
-                    answer: trueFalseQuestionAnswer[i],
-                    miniseconds: trueFalseQuestionTimer[i]
-                });
+            if(time > 2){
+                answerSheet['TFs'][actualTrueFalseNum]['miniseconds'].push(time, currentAnswer);
             }
         }
-        if (mixOrderFlag) {
-            trueFalseAnswerSheet = restoreByNewIndex(trueFalseMixOrder, trueFalseAnswerSheet);
+    }
+    function restoreTrueFalseAnswer(){
+        var actualTrueFalseNum = getMixOrderArray(trueFalseNum, currentTrueFalseQuestionNum);
+        var answerObj = answerSheet['TFs'][actualTrueFalseNum];
+        var answer = answerObj['answer'];
+        if(answer != -1){
+            var currentSingleAnswer = answer;
+            $('.trueFalseQuestionItem .candidates').find('input').eq(currentSingleAnswer).attr('checked', 'checked');
+            $('.trueFalseQuestionItem .candidates').find('li').eq(currentSingleAnswer).addClass('selected');
         }
-        answerSheet['TFs'] = trueFalseAnswerSheet;
+    }
+    function emptyTrueFalseQuestion(){
+        $('.trueFalseQuestionItem .stem').html('');
+        $('.trueFalseQuestionItem .candidates').html('');
+    }
+    function renderTrueFalseQuestion(){
+        var actualTrueFalseNum = getMixOrderArray(trueFalseNum, currentTrueFalseQuestionNum);
+        var questionInfo = getQuestionInfo('TrueFalse', actualTrueFalseNum);
+        emptyTrueFalseQuestion();
+        if (questionInfo) {
+            var candidatesStr = '';
+            candidatesStr += '<li><input type="radio" id="A" name="candidates" value="' + 0 + '"><label style="width: 90%;" for="A">false</label></li>';
+            candidatesStr += '<li><input type="radio" id="B" name="candidates" value="' + 1 + '"><label style="width: 90%;" for="B">true</label></li>';
+
+            $('.trueFalseQuestionItem .stem').html((currentTrueFalseQuestionNum + 1) + '.' + questionInfo);
+            $('.trueFalseQuestionItem .candidates').html(candidatesStr);
+            $('.trueFalseQuestionItem .labNo').html(currentTrueFalseQuestionNum + 1);
+            setQuestionLabFocus('.trueFalseLabBtns', currentTrueFalseQuestionNum);
+            restoreTrueFalseAnswer();
+            getTimer();
+        }
     }
 </script>
