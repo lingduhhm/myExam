@@ -67,6 +67,17 @@ button.selected {
 .smallPadding {
     padding: 10px;
 }
+.user {
+    position: absolute;
+    right: 50px;
+    top: 10px;
+    height: 30px;
+    line-height: 30px;
+    display: none;
+}
+.user img {
+    height: 30px;
+}
 
 
 /* main page */
@@ -144,6 +155,15 @@ input.fillingInput {
     cursor: pointer;
     margin-bottom: 0;
     margin-left: 5px;
+}
+input.focusStyle {
+    outline: none;
+    border-color: #9ecaed;
+    box-shadow: 0 0 10px #9ecaed;
+}
+.commonHeight {
+    height: 200px;
+    padding: 20px;
 }
 
 

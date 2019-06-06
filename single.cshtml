@@ -11,7 +11,7 @@
                 <span class="labNo">0</span>
                 <span>/</span>
                 <span class="totalNo">0</span>
-                <button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button>
+                <button role="button" id="nextBtn" class="btn btn-secondary nav_next" autofocus="autofocus">下一题</button>
             </div>
         </div>
     </div>
@@ -68,7 +68,6 @@
                 renderSingleQuestion();
                 setBtnEnabled(previousBtn);
             } else {
-                //emptySingleQuestion();
                 $('.tab-content').hide();
                 $('#navToNextTab').modal('show');
             }
@@ -154,18 +153,21 @@
                 var candidatesIndex = getMixSelectionArray(candidates.length, j);
                 var charCode = formatCharCode(j);
                 var selection = candidates[candidatesIndex];
-                candidatesStr += '<li><input type="radio" id="' + charCode + '" name="candidates" value="' + j + '"><label style="width: 90%;" for="' + charCode + '">' + selection + '</label></li>';
+                candidatesStr += '<li><input type="radio" id="' + charCode + '" name="candidates"  value="' + j + '"><label style="width: 90%;" for="' + charCode + '">' + selection + '</label></li>';
+                
             }
             $('.singleQuestionItem .stem').html((currentSingleNum + 1) + '.' + stem);
             $('.singleQuestionItem .candidates').html(candidatesStr);
             $('.singleQuestionItem .labNo').html(currentSingleNum + 1);
             setQuestionLabFocus('.singleLabBtns', currentSingleNum);
-            setSingleSelectionFocus();
+            setSingleBtnFocus();      
             restoreSingleAnswer();
             getTimer();
         }
     }
-    function setSingleSelectionFocus(){
-        $('.singleQuestionItem input[name="candidates"]').first().focus();
-    }  
+    function setSingleBtnFocus(){
+        setTimeout(function(){
+            $('.singleQuestionItem .nav_next').focus();
+        }, 1000)  
+    } 
 </script>

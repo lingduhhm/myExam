@@ -86,6 +86,7 @@
                 },
                 success: function (data) {
                     //alert(data);
+                    clearTableNoDataText();
                     var examPaperInfo = JSON.parse(data);
                     var id = examPaperInfo['_id'];
                     var index = checkUnique(id);

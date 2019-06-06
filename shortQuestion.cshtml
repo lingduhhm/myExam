@@ -28,6 +28,7 @@
             var editor = new E(oEditorEle);
             editor.customConfig.onchange = editorChange;
             editor.create();
+            $('.w-e-text').attr('tabindex', 0);
 	    }
 	})
 	function initShortAnswerSheet(){
@@ -74,7 +75,6 @@
                 renderShortQuestion();
                 setBtnEnabled(previousBtn);
             } else {
-                emptyShortQuestion();
                 $('.tab-content').hide();
                 $('#navToNextTab').modal('show');
             }
@@ -129,6 +129,7 @@
             $('.shortQuestionItem .stem').html((currentShortQuestionNum + 1) + '.' + questionInfo);
             $('.shortQuestionItem .labNo').html(currentShortQuestionNum + 1);
             setQuestionLabFocus('.shortLabBtns', currentShortQuestionNum);
+            setShortFocus();
             restoreShortAnswer();
             getTimer();
         }
@@ -142,5 +143,15 @@
         } else {
             thisLabNo.removeClass('selected');
         }
+    }
+    function setShortFocus(){
+        setTimeout(function(){
+            var editEle = $('.w-e-text');
+            if(editEle.html() === '<p><br></p>'){
+                editEle.focus();
+            }else{
+                $('.shortQuestionItem .nav_next').focus();
+            }
+        }, 500);       
     }
 </script>

@@ -2,7 +2,6 @@
 @using MongoDB.Bson;
 @{
     string examId = Request.QueryString["examId"];
-    string currentTester = Request.QueryString["tester"];
 }
 <!DOCTYPE html>
 <html>
@@ -27,8 +26,7 @@
     <script src="~/Scripts/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="~/Scripts/js/jquery.cookie.js"></script>
     <script>
-        var examId = "@examId" || "实习生测试1";
-        var currentTester = "@currentTester" || "tester";
+        var examId = '@examId';
         var currentExamPaperInfo = {};
         var singleNum = 0;
         var multiNum = 0;
@@ -46,8 +44,8 @@
         var time_hour = 0;
         //init answer sheet   
         var answerSheet = {
-            tester: 'currentTester',
-            id: null,
+            tester: '',
+            id: '',
             examPaperId: null,
             dt: null,
             singles: [],
@@ -59,7 +57,17 @@
         };
         var mixOrderArray = [], mixSelectionArray = [];        
         $(document).ready(function(){
-            getExamPaperInfo();
+            if ($.cookie('userId') != null) {
+                answerSheet['id'] = $.cookie('userId');
+                $('#userIdIcon').html('Lily');
+                $('.user').show();
+            } else {
+                window.location.href = "login.cshtml";
+                return;
+            }
+            if(examId){
+                getExamPaperInfo();
+            }            
         })
         function getExamPaperInfo() {
            $.ajax({
@@ -80,10 +88,10 @@
                         fillingNum = currentExamPaperInfo['filling'].length;
                         trueFalseNum = currentExamPaperInfo['TrueFalse'].length;
                         shortNum = currentExamPaperInfo['shortQuestion'].length;
-                        /*mixOrderFlag = currentExamPaperInfo['mixOrder'];
-                        mixSelectionFlag = currentExamPaperInfo['mixSelection'];*/
-                        mixOrderFlag = 0;
-                        mixSelectionFlag = 0;
+                        mixOrderFlag = currentExamPaperInfo['mixOrder'];
+                        mixSelectionFlag = currentExamPaperInfo['mixSelection'];
+                        /*mixOrderFlag = 0;
+                        mixSelectionFlag = 0;*/
                     } else {
                         $('.tab-content').hide();
                         $('#noAnyQuestion').html('<h5>Failed to parse any question!</h5>');
@@ -100,6 +108,10 @@
     <div class="wholePage">
         <div class="head">
             <img class="banner" src="~/Images/IT-Fundamentals-logo.png">
+            <div class="user">
+                <img src="/Images/ICON/person.png" alt="Alternate Text">
+                <a id="userIdIcon"></a>
+            </div>
             <sapn class="exit" id="exit" onclick="exit()"><img src="~/Images/ICON/exit.png" alt="Exit" /></sapn>
             <div class="clearboth"></div>
             <div class="navigation" id="navigation">
@@ -132,7 +144,7 @@
                     <p>确认切换到下一题？</p>
                     <div class="navToNextTabBtns">
                         <button id="navConfrim" data-dismiss="modal" class="btn btn-primary" onclick="navToNextTab()">确认</button>
-                        <button data-dismiss="modal" class="btn btn-secondary">取消</button>
+                        <button data-dismiss="modal" class="btn btn-secondary" onclick="cancelToNextTab()">取消</button>
                     </div>
                 </div>
             </div>
@@ -161,7 +173,7 @@
                 @RenderPage("shortQuestion.cshtml")            
             </div>
         </div>
-        <div id="noAnyQuestion" class="bgColor smallPadding"><h5>No any question!</h5></div>
+        <div id="noAnyQuestion" class="bgColor smallPadding"><h5>You have no any exam!</h5></div>
     </div>
     <div class="modal fade" id="submitModal" tabindex="-1" role="dialog" data-keyboard="false" aria-hidden="true" data-backdrop="static">
         <div class="modal-dialog modal-lg">
@@ -197,40 +209,35 @@
                 emptyTabContent();
                 renderCurrentTabContent($(this));
                 $('.tab-content').show();
+                setNextBtnFocus();              
+            })
+            $('#submitModal').on('shown.bs.modal', function () {
+                $('#submitConfrim').focus();
+            })
+            $('#submitModal').on('hidden.bs.modal', function () {
+                setNextBtnFocus();
             })
             $('#pauseModal').on('shown.bs.modal', function () {
                 startPauseTimer();
                 $('#stopPauseBtn').focus();
             })
+            $('#navToNextTab').on('shown.bs.modal', function () {
+                $('#navConfrim').focus();
+            })
+            $('#navToNextTab').on('hidden.bs.modal', function () {
+                $('.nav-link.active').focus()
+            })           
             setFirstTabSelected();
             $(document).keydown(function(event){
                 var event = event || window.event;
                 var keyCode = event.keyCode;
-                if(keyCode == 39){
-                   $('.nav_next')[0].click();
+                //A ~ Z : 65 ~ 90
+                var gapNum = keyCode - 65;
+                //if(gapNum > -1 && gapNum < 26 && $('.candidates input')[gapNum]) {
+                if( -1 < gapNum < 26 && $('.candidates input')[gapNum]) {
+                    $('.candidates input')[gapNum].click();
                 }
             });
-            $(document).keydown(function(event){
-                var event = event || window.event;
-                var keyCode = event.keyCode;
-                if(keyCode == 37){
-                   $('.nav_previous')[0].click();
-                }
-            });
-            $('.nav_next').keydown(function(event){
-                var event = event || window.event;
-                var keyCode = event.keyCode;
-                if(keyCode == 37 || keyCode == 39){
-                   event.preventDefault();;
-                }
-            })
-            $('.nav_previous').keydown(function(event){
-                var event = event || window.event;
-                var keyCode = event.keyCode;
-                if(keyCode == 39 || keyCode == 37){
-                   event.preventDefault();;
-                }
-            })
         })
         function setFirstTabSelected(){
             var oFirstTabButton = $('.nav-item').not('.tabDisabled').first().find('a');
@@ -317,7 +324,7 @@
                 thisButton.parents(questionTab).children('button').removeClass('active');
                 thisButton.addClass('active');
             }
-            thisButton.focus();
+            //thisButton.focus();
         }
         function getTimer() {
             time = 0;
@@ -448,6 +455,26 @@
                     break;
             }
         }
+        function setNextBtnFocus(currentTab){
+            var currentTab = $('.nav-link.active').attr('id');
+            switch (currentTab) {
+                case 'singleTab':
+                    setSingleBtnFocus();
+                    break;
+                case 'multiTab':
+                    setMultiBtnFocus();
+                    break;
+                case 'fillingTab':
+                    setSingleBtnFocus();
+                    break;
+                case 'trueFalseTab':
+                    setTrueFalseBtnFocus();
+                    break;
+                case 'shortTab':
+                    setShortFocus();
+                    break;
+            }
+        }
         function setBtnEnabled(obj){
             obj.attr('disabled', false);
         }
@@ -459,7 +486,11 @@
         }
         function setAnswer(tab, questionNum, answer){
             answerSheet[tab][questionNum]['answer'] = answer;
-        } 
+        }
+        function exit(){
+            $.removeCookie("userId");
+            window.location.replace("/login.cshtml");
+        }
     </script>
 </body>
 </html>

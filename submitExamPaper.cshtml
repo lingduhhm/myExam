@@ -10,7 +10,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>提交试卷</title>
 
-
+    <link rel="stylesheet" type="text/css" href="Content/css/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="Content/css/main.css" />
+    <link rel="stylesheet" href="Content/css/common.css">
     <script src="~/Scripts/js/jquery-1.11.1.min.js"></script>
     <link rel="stylesheet" type="text/css" href="Content/css/bootstrap.min.css">
     <script src="~/Scripts/js/popper.min.js"></script>
@@ -18,14 +20,56 @@
     <script type="text/javascript" src="~/Scripts/js/jquery.cookie.js"></script>
 </head>
 <body>
-    <div style="font-weight: 600; font-size: 1.2rem;" id="submitExamPaper"></div>
+    <div class="wholePage">
+        <div class="head">
+            <img class="banner" src="/Images/IT-Fundamentals-logo.png">
+            <div class="user">
+                <img src="/Images/ICON/person.png" alt="Alternate Text">
+                <a id="userIdIcon"></a>
+            </div>
+            <sapn class="exit" id="exit" onclick="exit()"><img src="~/Images/ICON/exit.png" alt="Exit" /></sapn>
+            <div class="clearboth"></div>
+            <div id="submitExamPaper" class="bgColor commonHeight">
+            </div>
+        </div>
+    </div>
 </body>
 <script>
     var successFlag = '@successFlag';
     if (successFlag == 'True') {
-        $('#submitExamPaper').html('你已成功提交试卷！');
+        var str = '<h5>你已成功提交试卷！</h5>';
+        str += '<button onclick="checkAnswer()">点击查看成绩</button>';
+        $('#submitExamPaper').html(str);
     } else {
-        $('#submitExamPaper').html('提交试卷失败！');
+        $('#result').html('提交试卷失败！');
+    }
+    function checkAnswer(){
+        $.ajax({
+                type: "post",
+                data: { '_id': '121212', 'examid': '实习生测试'},
+                url: "/common/CheckAnswer.ashx",
+                async: false,
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert('Request Failed!');
+                },
+                success: function (data) {
+                    /*var data = JSON.parse(data) || data;
+                    if (typeof (data.fail) == 'undefined') {
+                        currentExamPaperInfo = data;
+                        singleNum = currentExamPaperInfo['single'].length;
+                        multiNum = currentExamPaperInfo['multi'].length;
+                        fillingNum = currentExamPaperInfo['filling'].length;
+                        trueFalseNum = currentExamPaperInfo['TrueFalse'].length;
+                        shortNum = currentExamPaperInfo['shortQuestion'].length;
+                        mixOrderFlag = currentExamPaperInfo['mixOrder'];
+                        mixSelectionFlag = currentExamPaperInfo['mixSelection'];
+                    } else {
+                        $('.tab-content').hide();
+                        $('#noAnyQuestion').html('<h5>Failed to parse any question!</h5>');
+                    }*/
+                    console.log(data);
+                }
+           });
     }
 </script>
 </html>

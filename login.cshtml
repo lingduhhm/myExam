@@ -73,7 +73,9 @@
                 	var result = JSON.parse(data);
                 	if(typeof (result.fail) == 'undefined'){
                 		$('#hint').html("");
-						$.cookie("userId", result.testerid);
+                        var cookieExpireTime = new Date(); 
+                        cookieExpireTime.setTime((new Date()).getTime() + ( 60 * 60 * 1000)); //coockie保存一小时
+						$.cookie("userId", result.testerid, {expires: cookieExpireTime});
                         window.location.href = "mainPage.cshtml?examId=" + result.examid;
                 	} else {
                 		if(result.fail == 1){

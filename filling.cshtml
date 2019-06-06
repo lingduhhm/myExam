@@ -67,7 +67,6 @@
                 renderFillingQuestion();
                 setBtnEnabled(previousBtn);
             } else {
-                emptyFillingQuestion();
                 $('.tab-content').hide();
                 $('#navToNextTab').modal('show');
             }
@@ -146,7 +145,21 @@
             $('.fillingQuestionItem .labNo').html(currentFillingQuestionNum + 1);
             setQuestionLabFocus('.fillingLabBtns', currentFillingQuestionNum);
             restoreFillingAnswer();
+            setFillingInputFocus();
             getTimer();
         }
+    }
+    function setFillingInputFocus(){
+        setTimeout(function() {
+            var allInputEle = $('.fillingQuestionItem input');
+            for(var i=0; i<allInputEle.length; i++){
+                var inputEle = $(allInputEle[i]);
+                if(inputEle.val().trim() == ''){
+                    inputEle.focus();
+                    return;
+                }
+            }
+            $('.fillingQuestionItem .nav_next').focus();
+        }, 500);       
     }
 </script>

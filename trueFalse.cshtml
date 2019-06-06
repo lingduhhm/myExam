@@ -11,7 +11,7 @@
                 <span class="labNo">0</span>
                 <span>/</span>
                 <span class="totalNo">0</span>
-                <button role="button" id="nextBtn" class="btn btn-secondary nav_next">下一题</button>
+                <button role="button" id="nextBtn" class="btn btn-secondary nav_next" autofocus="autofocus">下一题</button>
             </div>
         </div>
     </div>
@@ -69,7 +69,6 @@
                 renderTrueFalseQuestion();
                 setBtnEnabled(previousBtn);
             } else {
-                emptyTrueFalseQuestion();
                 $('.tab-content').hide();
                 $('#navToNextTab').modal('show');
             }
@@ -153,8 +152,14 @@
             $('.trueFalseQuestionItem .candidates').html(candidatesStr);
             $('.trueFalseQuestionItem .labNo').html(currentTrueFalseQuestionNum + 1);
             setQuestionLabFocus('.trueFalseLabBtns', currentTrueFalseQuestionNum);
+            setTrueFalseBtnFocus();
             restoreTrueFalseAnswer();
             getTimer();
         }
+    }
+    function setTrueFalseBtnFocus(){
+        setTimeout(function(){
+            $('.trueFalseQuestionItem .nav_next').focus();
+        }, 1000)
     }
 </script>
