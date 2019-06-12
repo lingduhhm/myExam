@@ -5,7 +5,8 @@ using System.Web;
 using BizATWebCommon;
 using MongoDB.Driver;
 using MongoDB.Bson;
-
+using BizSmooth;
+using ExamProcess;
 public class logincheck : IHttpHandler {
 
     public void ProcessRequest (HttpContext context) {
@@ -25,10 +26,9 @@ public class logincheck : IHttpHandler {
             }
             else
             {
-                context.Response.Write("{\"testerid\":"+id+ "," + "\"examid\":\"实习生测试\"}");
-
+                    context.Response.Write("{\"testerid\":\"" + id +"\",\"testername\":\""+user["name"].AsString+ "\",\"examid\":\""+user["examid"].AsString+"\",\"isfinash\":\""+user["isfinash"].AsBoolean+"\"}");
+            
             }
-
 
         }
         catch(Exception e)

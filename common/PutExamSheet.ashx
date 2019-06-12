@@ -1,5 +1,6 @@
 ﻿<%@ WebHandler Language="C#" Class="PutExamSheet" %>
 
+
 using System;
 using System.Web;
 using MongoDB.Bson;
@@ -18,7 +19,9 @@ public class PutExamSheet : IHttpHandler {
         try
         {
             string jsonStr = context.Request["Answer"];
-             var answerSheet = JSON.parse<ExamPaper.AnswerSheet>(jsonStr);
+            var answerSheet = JSON.parse<ExamPaper.AnswerSheet>(jsonStr);
+            var result = DBConnect.LookupID("Bizexam", "Userinfo", answerSheet.id);
+            result["isfinash"] = true;
             if (answerSheet == null)
             {
                 flag = false;
@@ -28,8 +31,10 @@ public class PutExamSheet : IHttpHandler {
             else
             {
                 DBConnect.Initialize();
-                var col = DBConnect.GetCollection("Bizexam","answersheet");
-                DBConnect.SaveBson(col, answerSheet.ToBsonDocument());
+                var col1= DBConnect.GetCollection("Bizexam","answersheet");
+                var col2= DBConnect.GetCollection("Bizexam","Userinfo");
+                DBConnect.SaveBson(col1, answerSheet.ToBsonDocument());
+                DBConnect.SaveBson(col2, result);
                 flag = true;
                 context.Response.Write(flag);
             }

@@ -20,7 +20,7 @@
     var currentTrueFalseQuestionNum = 0;
     $(document).ready(function(){
         if(trueFalseNum > 0){
-        	//init single answer
+        	//init trueFalse answer
             initTrueFalseAnswerSheet();
             refreshTrueFalseList();
         }
@@ -118,10 +118,10 @@
         //if select or change any answer
         if(currentAnswer != answer){
             answerSheet['TFs'][actualTrueFalseNum]['answer'] = answer;
-            answerSheet['TFs'][actualTrueFalseNum]['miniseconds'].push(time, answer);
+            answerSheet['TFs'][actualTrueFalseNum]['miniseconds'].push(time);
         } else {
             if(time > 2){
-                answerSheet['TFs'][actualTrueFalseNum]['miniseconds'].push(time, currentAnswer);
+                answerSheet['TFs'][actualTrueFalseNum]['miniseconds'].push(time);
             }
         }
     }
@@ -130,9 +130,8 @@
         var answerObj = answerSheet['TFs'][actualTrueFalseNum];
         var answer = answerObj['answer'];
         if(answer != -1){
-            var currentSingleAnswer = answer;
-            $('.trueFalseQuestionItem .candidates').find('input').eq(currentSingleAnswer).attr('checked', 'checked');
-            $('.trueFalseQuestionItem .candidates').find('li').eq(currentSingleAnswer).addClass('selected');
+            $('.trueFalseQuestionItem .candidates').find('input').eq(answer).attr('checked', 'checked');
+            $('.trueFalseQuestionItem .candidates').find('li').eq(answer).addClass('selected');
         }
     }
     function emptyTrueFalseQuestion(){

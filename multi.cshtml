@@ -126,10 +126,10 @@
         //if select or change any answer
         if(!ifChangeAnswer){
             answerSheet['multis'][actualMultiNum]['answer'] = answer;
-            answerSheet['multis'][actualMultiNum]['miniseconds'].push(time, answer);
+            answerSheet['multis'][actualMultiNum]['miniseconds'].push(time);
         }else{
             if(time > 2){
-                answerSheet['multis'][actualMultiNum]['miniseconds'].push(time, answer);
+                answerSheet['multis'][actualMultiNum]['miniseconds'].push(time);
             } 
         }
     }

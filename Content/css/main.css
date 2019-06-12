@@ -187,3 +187,25 @@ input.focusStyle {
     height: 40px;
     border: 1px solid #aaa;
 }
+
+/* submit exam paper */
+#submitExamPaper h5 {
+    margin-top: 60px;
+}
+#submitExamPaper .submitContent {
+    line-height: 160px;
+    margin-top: 0px ;
+}
+#submitExamPaper button {
+    width: 140px;
+    margin-top: 10px;
+}
+#yourGrade {
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin: 10px;
+}
+#submitExamPaper .hint {
+    color: red;
+    display: none;
+}

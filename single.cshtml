@@ -107,21 +107,26 @@
         })
     }
     function updateSingleAnswer() {
-        clearInterval(timer);
-        var candidatesNum = $('.singleQuestionItem input[name="candidates"]').length;
+        clearInterval(timer);        
         var answer = typeof ($('.singleQuestionItem input[name="candidates"]:checked').val()) == 'undefined' ? -1 : Number($('.singleQuestionItem input[name="candidates"]:checked').val());
+        var actualSingleNum = getMixOrderArray(singleNum, currentSingleNum);
         if(answer != -1){
+            var candidatesNum = $('.singleQuestionItem input[name="candidates"]').length;
             var actualAnswer = getMixSelectionArray(candidatesNum, answer);
-            var actualSingleNum = getMixOrderArray(singleNum, currentSingleNum);
             var currentAnswer = answerSheet['singles'][actualSingleNum]['answer'];
             //if select or change any answer
             if(currentAnswer != actualAnswer){
                 answerSheet['singles'][actualSingleNum]['answer'] = actualAnswer;
-                answerSheet['singles'][actualSingleNum]['miniseconds'].push(time, actualAnswer);
+                answerSheet['singles'][actualSingleNum]['miniseconds'].push(time);
             } else {
                 if(time > 2){
-                    answerSheet['singles'][actualSingleNum]['miniseconds'].push(time, currentAnswer);
+                    answerSheet['singles'][actualSingleNum]['miniseconds'].push(time);
                 }
+            }
+        } else {
+            //just see the stem but not do any change
+            if(time > 2){
+                answerSheet['singles'][actualSingleNum]['miniseconds'].push(time);
             }
         }      
     }
@@ -135,7 +140,6 @@
             $('.singleQuestionItem .candidates').find('input').eq(currentSingleAnswer).attr('checked', 'checked');
             $('.singleQuestionItem .candidates').find('li').eq(currentSingleAnswer).addClass('selected');
         }
-
     }
     function emptySingleQuestion(){
         $('.singleQuestionItem .stem').html('');
@@ -154,7 +158,6 @@
                 var charCode = formatCharCode(j);
                 var selection = candidates[candidatesIndex];
                 candidatesStr += '<li><input type="radio" id="' + charCode + '" name="candidates"  value="' + j + '"><label style="width: 90%;" for="' + charCode + '">' + selection + '</label></li>';
-                
             }
             $('.singleQuestionItem .stem').html((currentSingleNum + 1) + '.' + stem);
             $('.singleQuestionItem .candidates').html(candidatesStr);

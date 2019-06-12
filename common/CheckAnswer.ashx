@@ -23,51 +23,66 @@ public class CheckAnswer : IHttpHandler {
             var examinfo = DBConnect.LookupID("Bizexam", "exam", examid);
             Exam newexam = JSON.parse<Exam>(examinfo.ToString());
             ExamPaper.AnswerSheet testanswer = JSON.parse<ExamPaper.AnswerSheet>(testeranswer.ToString());
-            List<Exam.Singles> singles = newexam.singles; ;
+            List<Exam.Singles> singles = newexam.singles; 
             List<Exam.Multi> Multi = newexam.multis;
             List<Exam.TrueFalse> TFs = newexam.TFs;
             List<Exam.Filling> fillings = newexam.fillings;
             List<Exam.ShortQuestion> Shorts = newexam.shorts;
-            if (singles!=null&& singles.Count > 0)
+            if (testanswer.singles!=null&& testanswer.singles.Count > 0)
             {
-                for(int i=0;i<singles.Count;i++)
+                for(int i=0;i<testanswer.singles.Count;i++)
                 {
-                    int score=newcheck.SingleCheck(testanswer.singles[i].answer, singles[i].theAnswer, singles[i].scoreValue);
-                    sumvalue = sumvalue + score;
+                    if (testanswer.singles[i].answer != -1)
+                    {
+                        int score = newcheck.SingleCheck(testanswer.singles[i].answer, singles[i].theAnswer, singles[i].scoreValue);
+                        sumvalue = sumvalue + score;
+                    }
                 }
             }
-          
-                if (Multi != null&&Multi.Count > 0)
+
+            if (testanswer.multis != null&&testanswer.multis.Count > 0)
+            {
+                for (int i = 0; i < testanswer.multis.Count; i++)
                 {
-                    for (int i = 0; i < Multi.Count; i++)
+                    if (testanswer.multis[i].answer.Length != 0)
                     {
                         int score = newcheck.MultiCheck(testanswer.multis[i].answer, Multi[i].theAnswer, Multi[i].theAnswer.Length, Multi[i].scoreValue);
                         sumvalue = sumvalue + score;
                     }
                 }
-            
-            if(TFs!=null&&TFs.Count>0)
+            }
+
+            if(testanswer.TFs!=null&&testanswer.TFs.Count>0)
             {
-                for(int i=0;i<TFs.Count;i++)
+                for(int i=0;i<testanswer.TFs.Count;i++)
                 {
-                    int score= newcheck.TFCheck(testanswer.TFs[i].answer, TFs[i].theAnswer, TFs[i].scoreValue);
-                    sumvalue = sumvalue + score;
+                    if (testanswer.TFs[i].answer != -1)
+                    {
+                        int score = newcheck.TFCheck(testanswer.TFs[i].answer, TFs[i].theAnswer, TFs[i].scoreValue);
+                        sumvalue = sumvalue + score;
+                    }
                 }
             }
-            if(fillings !=null&&fillings.Count>0)
+            if(testanswer.fillings !=null&&testanswer.fillings.Count>0)
             {
-                for(int i=0;i<fillings.Count;i++)
+                for(int i=0;i<testanswer.fillings.Count;i++)
                 {
-                    int score=  newcheck.CheckAnswer(testanswer.fillings[i].answer, fillings[i].evaluation, fillings[i].scoreValue, fillings[i].weights);
-                    sumvalue = sumvalue + score;
+                    if (testanswer.fillings[i].answer.Length!=0)
+                    {
+                        int score = newcheck.CheckAnswer(testanswer.fillings[i].answer, fillings[i].evaluation, fillings[i].scoreValue, fillings[i].weights);
+                        sumvalue = sumvalue + score;
+                    }
                 }
             }
-            if(Shorts!=null&& Shorts.Count>0)
+            if(testanswer.shorts!=null&&testanswer.shorts.Count>0)
             {
-                for(int i=0;i<Shorts.Count;i++)
+                for(int i=0;i<testanswer.shorts.Count;i++)
                 {
-                    int score=  newcheck.ShortCheck(testanswer.shorts[i].answer, Shorts[i].evaluation,Shorts[i].scoreValue);
-                    sumvalue = sumvalue + score;
+                    if (testanswer.shorts[i] .answer!= null)
+                    {
+                        int score = newcheck.ShortCheck(testanswer.shorts[i].answer, Shorts[i].evaluation, Shorts[i].scoreValue);
+                        sumvalue = sumvalue + score;
+                    }
                 }
             }
             context.Response.Write("{\"Score\":" + sumvalue + "}");

@@ -18,7 +18,7 @@
     var currentFillingQuestionNum = 0;
     $(document).ready(function(){
         if(fillingNum > 0){
-            //init single answer
+            //init filling answer
             initFillingAnswerSheet();
             refreshFillingList();
         }
@@ -77,11 +77,11 @@
             updateFillingAnswer();
             if (currentFillingQuestionNum > 0) {
                 currentFillingQuestionNum--;
+                if (currentFillingQuestionNum == 0) {
+                    setBtnDisabled(previousBtn);
+                }
             }
-            renderFillingQuestion();
-            if (currentFillingQuestionNum == 0) {
-                setBtnDisabled(previousBtn);
-            }
+            renderFillingQuestion();            
         });
 
         //only select at least one answer will trigger
@@ -114,10 +114,10 @@
         var ifChangeAnswer = arrayCompare(currentAnswer, answer);
         if(!ifChangeAnswer){
             answerSheet['fillings'][actualFillingNum]['answer'] = answer;
-            answerSheet['fillings'][actualFillingNum]['miniseconds'].push(time, answer);
+            answerSheet['fillings'][actualFillingNum]['miniseconds'].push(time);
         }else{
             if(time > 2){
-                answerSheet['fillings'][actualFillingNum]['miniseconds'].push(time, answer);
+                answerSheet['fillings'][actualFillingNum]['miniseconds'].push(time);
             } 
         }
     }
@@ -133,7 +133,6 @@
     }
     function emptyFillingQuestion(){
         $('.fillingQuestionItem .stem').html('');
-        $('.fillingQuestionItem .candidates').html('');
     }
     function renderFillingQuestion(){
         var actualFillingNum = getMixOrderArray(fillingNum, currentFillingQuestionNum);

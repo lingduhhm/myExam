@@ -58,9 +58,6 @@
         		$('#userPwd').focus();
         		return;
         	}
-        	if(userInfo.userId.value != $.cookie('userId')){
-        		$.cookie('username', userInfo.userId.value);
-        	}
         	$.ajax({
                 type: "post",
                 data: { "_id": userInfo.userId.value, "password": userInfo.userPwd.value},
@@ -73,10 +70,19 @@
                 	var result = JSON.parse(data);
                 	if(typeof (result.fail) == 'undefined'){
                 		$('#hint').html("");
+                        //handle cookie
                         var cookieExpireTime = new Date(); 
                         cookieExpireTime.setTime((new Date()).getTime() + ( 60 * 60 * 1000)); //coockie保存一小时
 						$.cookie("userId", result.testerid, {expires: cookieExpireTime});
-                        window.location.href = "mainPage.cshtml?examId=" + result.examid;
+                        $.cookie("ifFinish", result.isfinash, {expires: cookieExpireTime});
+                        $.cookie('userInfo', data, {expires: cookieExpireTime});
+
+                        //if have finished the exam
+                        if(result.isfinash == 'False') {
+                            window.location.href = "mainPage.cshtml";
+                        } else {
+                            window.location.href = "submitExamPaper.cshtml?success=True";
+                        }
                 	} else {
                 		if(result.fail == 1){
                 			$('#userId').addClass('form_error');

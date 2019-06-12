@@ -1,8 +1,5 @@
 ﻿@using BizATWebCommon;
 @using MongoDB.Bson;
-@{
-    string examId = Request.QueryString["examId"];
-}
 <!DOCTYPE html>
 <html>
 <head>
@@ -26,7 +23,7 @@
     <script src="~/Scripts/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="~/Scripts/js/jquery.cookie.js"></script>
     <script>
-        var examId = '@examId';
+        var examId = '';
         var currentExamPaperInfo = {};
         var singleNum = 0;
         var multiNum = 0;
@@ -57,15 +54,23 @@
         };
         var mixOrderArray = [], mixSelectionArray = [];        
         $(document).ready(function(){
-            if ($.cookie('userId') != null) {
+            var userInfo = $.cookie('userInfo') ? JSON.parse($.cookie('userInfo')) : {};
+            var userName = userInfo.testername;
+            examId = userInfo.examid;
+            if ($.cookie('userId') &&  $.cookie('userId') != null) {
                 answerSheet['id'] = $.cookie('userId');
-                $('#userIdIcon').html('Lily');
+                $('#userIdIcon').html(userName);
                 $('.user').show();
             } else {
                 window.location.href = "login.cshtml";
                 return;
             }
+            if($.cookie('ifFinish') == 'True') {
+                window.location.href = "submitExamPaper.cshtml?success=True";
+                return;
+            }
             if(examId){
+                answerSheet['examPaperId'] = examId;
                 getExamPaperInfo();
             }            
         })
@@ -76,7 +81,6 @@
                 url: "/common/GetExamPaper.ashx",
                 async: false,
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
-                    $('.tab-content').hide();
                     $('#noAnyQuestion').html('<h5>Requst Failured!</h5>');
                 },
                 success: function (data) {
@@ -90,10 +94,7 @@
                         shortNum = currentExamPaperInfo['shortQuestion'].length;
                         mixOrderFlag = currentExamPaperInfo['mixOrder'];
                         mixSelectionFlag = currentExamPaperInfo['mixSelection'];
-                        /*mixOrderFlag = 0;
-                        mixSelectionFlag = 0;*/
                     } else {
-                        $('.tab-content').hide();
                         $('#noAnyQuestion').html('<h5>Failed to parse any question!</h5>');
                     }
                 }
@@ -144,7 +145,7 @@
                     <p>确认切换到下一题？</p>
                     <div class="navToNextTabBtns">
                         <button id="navConfrim" data-dismiss="modal" class="btn btn-primary" onclick="navToNextTab()">确认</button>
-                        <button data-dismiss="modal" class="btn btn-secondary" onclick="cancelToNextTab()">取消</button>
+                        <button data-dismiss="modal" class="btn btn-secondary">取消</button>
                     </div>
                 </div>
             </div>
@@ -268,7 +269,7 @@
             return mixSelectionArray[len][num]
         }
         function returnMixSelectionArray(len, num){
-            var array = mixSelectionArray[len];
+            var array = mixSelectionArray[len] || [];
             for(var i=0; i<array.length; i++){
                 if(array[i] == num){
                     return i;
@@ -324,7 +325,6 @@
                 thisButton.parents(questionTab).children('button').removeClass('active');
                 thisButton.addClass('active');
             }
-            //thisButton.focus();
         }
         function getTimer() {
             time = 0;
@@ -391,7 +391,12 @@
                     window.location.replace('submitExamPaper.cshtml?success=False');
                 },
                 success: function (data) {
-                    window.location.replace('submitExamPaper.cshtml?success=' + data);
+                    if(data == 'True') {
+                        $.cookie("ifFinish", 'True');
+                        window.location.replace('submitExamPaper.cshtml?success=True');
+                    } else {
+                        window.location.replace('submitExamPaper.cshtml?success=False');
+                    }                  
                 }
             });
         }
@@ -489,6 +494,8 @@
         }
         function exit(){
             $.removeCookie("userId");
+            $.removeCookie("ifFinish");
+            $.removeCookie("userInfo");
             window.location.replace("/login.cshtml");
         }
     </script>

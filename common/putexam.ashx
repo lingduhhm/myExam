@@ -30,7 +30,7 @@ public class putexam : IHttpHandler {
             }
 
         }
-        catch
+        catch(Exception e)
         {
             context.Response.Write("Import fail!Please check");
         }

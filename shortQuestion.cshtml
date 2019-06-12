@@ -100,10 +100,10 @@
         //if fill or change any string
 		if(answer !== currentAnswer){
 			answerSheet['shorts'][actualShortNum]['answer'] = answer;
-            answerSheet['shorts'][actualShortNum]['miniseconds'].push(time, answer);
+            answerSheet['shorts'][actualShortNum]['miniseconds'].push(time);
 		} else {
 			if(time > 2){
-                answerSheet['shorts'][actualShortNum]['miniseconds'].push(time, answer);
+                answerSheet['shorts'][actualShortNum]['miniseconds'].push(time);
             }
 		}
 	}
@@ -118,7 +118,6 @@
 	}
 	function emptyShortQuestion(){
 		$('.shortQuestionItem .stem').html('');
-        $('.shortQuestionItem .candidates').html('');
         $('.editor .w-e-text').html('<p><br></p>');
 	}
 	function renderShortQuestion(){

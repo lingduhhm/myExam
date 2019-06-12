@@ -30,46 +30,51 @@
             <sapn class="exit" id="exit" onclick="exit()"><img src="~/Images/ICON/exit.png" alt="Exit" /></sapn>
             <div class="clearboth"></div>
             <div id="submitExamPaper" class="bgColor commonHeight">
+                <h5 id="examStatus"></h5>
+                <p class="hint"></p>
             </div>
         </div>
-    </div>
+        <div class="modal fade" id="grade">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <p id="yourGrade"></p>
+                </div>
+            </div>
+        </div>
+    </div>   
 </body>
 <script>
     var successFlag = '@successFlag';
-    if (successFlag == 'True') {
-        var str = '<h5>你已成功提交试卷！</h5>';
-        str += '<button onclick="checkAnswer()">点击查看成绩</button>';
-        $('#submitExamPaper').html(str);
-    } else {
-        $('#result').html('提交试卷失败！');
-    }
-    function checkAnswer(){
-        $.ajax({
-                type: "post",
-                data: { '_id': '121212', 'examid': '实习生测试'},
-                url: "/common/CheckAnswer.ashx",
-                async: false,
-                error: function (XMLHttpRequest, textStatus, errorThrown) {
-                    alert('Request Failed!');
-                },
-                success: function (data) {
-                    /*var data = JSON.parse(data) || data;
-                    if (typeof (data.fail) == 'undefined') {
-                        currentExamPaperInfo = data;
-                        singleNum = currentExamPaperInfo['single'].length;
-                        multiNum = currentExamPaperInfo['multi'].length;
-                        fillingNum = currentExamPaperInfo['filling'].length;
-                        trueFalseNum = currentExamPaperInfo['TrueFalse'].length;
-                        shortNum = currentExamPaperInfo['shortQuestion'].length;
-                        mixOrderFlag = currentExamPaperInfo['mixOrder'];
-                        mixSelectionFlag = currentExamPaperInfo['mixSelection'];
-                    } else {
-                        $('.tab-content').hide();
-                        $('#noAnyQuestion').html('<h5>Failed to parse any question!</h5>');
-                    }*/
-                    console.log(data);
-                }
-           });
+    $(document).ready(function(){
+        var userInfo = $.cookie('userInfo') ? JSON.parse($.cookie('userInfo')) : {};
+        var userName = userInfo.testername;
+
+        if ($.cookie('userId')) {                 
+            $('#userIdIcon').html(userName);
+            $('.user').show();
+        } else {
+            window.location.href = "login.cshtml";
+            return;
+        }
+
+        if (successFlag == 'True') {
+            $('#examStatus').html('你已成功提交试卷！');
+            if($.cookie('ifFinish') == 'True') {
+               $('.hint').html('成绩等待审核中 。。。');
+               $('.hint').show();
+            }
+        } else if (successFlag == 'False') {
+            $('#examStatus').html('提交试卷失败！');
+            $('.hint').html('请及时联系管理员 。。。');
+            $('.hint').show();
+        } else {
+            $('#examStatus').html('无法访问页面！');
+        }
+    })
+    function exit(){
+        $.removeCookie("userId");
+        $.removeCookie("userInfo");
+        window.location.replace("/login.cshtml");
     }
 </script>
 </html>
